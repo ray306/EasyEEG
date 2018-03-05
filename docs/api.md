@@ -1,21 +1,6 @@
-Aim；
-Simplifying the analysis
-- For beginners: clear logics for the steps (least concepts);
-- For data players (who want to check various aspects of data or to try various analysis algorithms): one-line code for each idea;
-- For data players (who want to apply DIY analysis methods): plenty of low/high level functions for quickly building your own algorithm.
-
-Advantages:
-- Don't need to extract the data in a messy way when you want to do new analysis. You can just use a string or a dictionary to describe the target now.
-- Applying EEG analysis method by one-line code. (ERP, topography, specturm, time-frequency, etc.)
-- Applying advanced EEG analysis methods (clustering, classification, etc.)
-- Beautiful ploting
-- Plenty of basic and advanced APIs which can help to build your own analysis algorithm and to visualize the result.
+## Initialization
 
 
----
-# todo
-
----
 # `Load data`
 load_raw_eeg()
 from_mne_epochs()

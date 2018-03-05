@@ -1,0 +1,22 @@
+site_name: EasyEEG
+site_url: https://github.com/ray306/easyeeg
+site_description: Concise Agile Flexible EEG data analyis toolbox
+site_author: Jinbiao Yang
+
+repo_url: https://github.com/ray306/easyeeg
+
+pages:
+  - Overview: index.md
+  - User Guide:
+    - Quickstart: quickstart.md
+    - Cookbook: cookbook.md
+    - Tips & tricks: tip.md
+    - API referrence: api.md
+  - About:
+    - Changelog: changelog.md
+
+markdown_extensions:
+    - toc:
+        permalink: True
+
+copyright: Copyright (c) 2018 Jinbiao Yang

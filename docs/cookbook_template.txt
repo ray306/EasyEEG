@@ -1,0 +1,89 @@
+# Cookbook
+---
+- Experiment Initiation
+- Experiment Structure
+- Visual
+    - Show text
+    - Show picture
+    - Show shape
+- Video
+- Auditory
+    - Play sound
+    - Sound Recording
+- Response
+- Scaffold functions
+- Get external parameters
+- Read or write file
+- Send trigger
+- Preload screen
+
+---
+
+## *Experiment Initiation*
+```python
+# coding:utf-8
+from expy import * # Import the needed functions
+start() # Initiate the experiment environment
+```
+
+## *Experiment Structure*
+A standard experiment contains 3 levels:
+
+- Run(Session)
+- Block
+- Trial
+  So we suggest that your code should have hierarchical structure, as the example below: 
+```python
+from expy import *
+start()
+
+def trial(stim):
+    draw(stim)
+    show(1)
+
+def block(trialList):
+    for stim in trialList:
+        trial(stim)
+        
+# run
+for trialList in blockList:
+    block(trialList)
+```
+
+## *Visual*
+### Show text
+& show_text.py
+
+### Show picture
+& show_picture.py
+
+### Show shape
+& show_shape.py
+
+## *Video*
+& play_video.py
+
+## *Auditory*
+### Play sound
+& play_sound.py
+
+### *Sound Recording*
+& sound_recording.py
+
+## *Response*
+& response.py
+
+## *Scaffold functions*
+& scaffold.py
+
+## *Get external parameters*
+& read_setting.py
+
+## *Read or Write*
+& io.py
+
+## *Send trigger*
+& send_trigger.py
+
+## *Preload screen*
+& preload.py

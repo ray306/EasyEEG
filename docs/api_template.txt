@@ -1,0 +1,68 @@
+## Initialization
+- **start**
+---
+## Stimulus
+### *Position*
+- **getPos**
+### *Text*
+- **drawText**
+### *Shape*
+- **drawRect**
+- **drawCircle**
+- **drawPoints**
+- **drawLines**
+### *Picture*
+- **drawPic**
+### *Sound*
+- **loadSound**
+- **loadManySound**
+- **makeBeep**
+- **makeNoise**
+- **makeSound**
+- **playSound**
+- **playBusySound**
+- **playFreeSound**
+- **playAlterableSound**
+- **toStereoArray**
+- **changeVolume**
+- **changePitch**
+- **changeOnTracks**
+
+### *Video*
+- **loadVideo**
+- **playVideo**
+### *Display controller*
+- **show**
+- **clear**
+- **getScreen**
+---
+## Response
+### *Keyboard & Mouse & Joystick*
+- **waitForResponse**
+### *Sound Recorder*
+- **environmentNoise**
+- **recordSound**
+---
+## IO
+### *Read*
+- **readSetting**
+- **readStimuli**
+- **readDir**
+### *Save*
+- **saveResult**
+### *Record the log*
+- **log**
+### *Send trigger*
+- **sendTrigger**
+---
+## Other Scaffolds
+- **textSlide**
+- **getInput**
+- **getSubjectID**
+- **instruction**
+- **alert**
+- **alertAndGo**
+- **alertAndQuit**
+- **restTime**
+- **normalProcedure**
+
