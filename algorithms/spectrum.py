@@ -66,10 +66,10 @@ def Time_frequency(self, freq_span=(0,30)):
             if freq_span[0]==0:
                 widths = freqs+0.001
             else:
-                widths = widths
+                widths = freqs
             # index = pd.MultiIndex.from_tuples([(*name,freq) for freq in freqs[::-1]], 
             #     names=['condition_group','channel_group','frequency'])
-
+    
             cwt_result = signal.cwt(np.array(data)[0], signal.ricker, widths=widths)
             cwt_result = pd.DataFrame(cwt_result,index=freqs[::-1],columns=data.columns)
 

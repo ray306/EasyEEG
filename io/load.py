@@ -1,5 +1,5 @@
 from ..default import *
-from ..structure import Epochs
+from ..structure import Epochs, Analyzed_data
 import pickle
 from scipy.io import loadmat
 
@@ -383,14 +383,19 @@ def load_filetrip_mat():
 
 def load_AnalyzedData(filepath):
     with open(filepath, 'rb') as f:
-        main = pickle.load(f)
-        data_name = pickle.load(f)
-        annotation_name = pickle.load(f)
-        for idx,i in enumerate(data_name):
-            main.data[idx].name = i
-        for idx,i in enumerate(annotation_name):
-            main.annotation[idx].name = i
-        return main
+        analysis_name = pickle.load(f)
+        data = pickle.load(f)
+        annotation = pickle.load(f)
+        default_plot_params = pickle.load(f)
+        data_names = pickle.load(f)
+        annotation_names = pickle.load(f)
+
+        for idx,i in enumerate(data_names):
+            data[idx].name = i
+        for idx,i in enumerate(annotation_names):
+            annotation[idx].name = i
+
+        return Analyzed_data(analysis_name, data, annotation, default_plot_params)
 
 'copied a lot from MNE 0.14.1'
 def load_topolocs(f_path,ch_names):

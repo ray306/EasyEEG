@@ -50,8 +50,11 @@ def save_result(result, filepath):
         filepath += '.pickle'
 
     with open(filepath, 'wb') as f:
-        pickle.dump(result, f)
+        pickle.dump(result.analysis_name, f)
+        pickle.dump(result.data, f)
+        pickle.dump(result.annotation, f)
+        pickle.dump(result.default_plot_params, f)
         pickle.dump([i.name for i in result.data if type(i) is pd.DataFrame], f)
         pickle.dump([i.name for i in result.annotation if type(i) is pd.DataFrame], f)
 
-    print('Done.')
+    print('Result saved.')

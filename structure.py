@@ -147,10 +147,14 @@ class Extracted_epochs():
                             name += ','.join(values) + ' '
 
                     analyzed_batch_dfs = [] 
+                    
+                    # deal with the multiple return value(s) in the 'func', 
+                    # 'len(analyzed_batch[0])' refers to the number of return value(s)
                     for i in range(len(analyzed_batch[0])):
                         analyzed_batch_df = pd.concat([result[i] for result in analyzed_batch])
                         analyzed_batch_df.name = name
                         analyzed_batch_dfs.append(analyzed_batch_df)
+
                     analyzed_collection.append(analyzed_batch_dfs)
 
                 if len(analyzed_collection[0]) > 1:
@@ -163,8 +167,13 @@ class Extracted_epochs():
 
 class Analyzed_data():
     def __init__(self, analysis_name, data, annotation=None, default_plot_params=dict()):
+        for i in data:
+            if 'time_group' in i.columns.names and len(i.columns.get_level_values('time_group').unique()) == 1:
+                i.columns = i.columns.get_level_values('time')
+
         self.analysis_name = analysis_name
         self.data = data
+
         if annotation:
             self.annotation = annotation
         else:

@@ -277,21 +277,21 @@ def generate_case_data(case_frame, epochs_data_todo):
     extracted_data.name = [case_frame_dict[target_level+'_name'] for target_level in levels]
     return extracted_data
 
-'''to be deprecated'''
-def extract(epochs, collection_script, average=False, preload=False):
-    collection_frame = parsing(collection_script, epochs)    
+# '''to be deprecated'''
+# def extract(epochs, collection_script, average=False, preload=False):
+#     collection_frame = parsing(collection_script, epochs)    
 
-    if average:
-        epochs_data_todo = epochs.average
-    else:
-        epochs_data_todo = epochs.all
+#     if average:
+#         epochs_data_todo = epochs.average
+#     else:
+#         epochs_data_todo = epochs.all
 
-    collection_data = []
-    for batch_name,batch_frame in collection_frame:
-        batch_data = (generate_case_data(case_frame, epochs_data_todo)
-                        for case_frame in batch_frame)
-        if preload:
-            batch_data = list(batch_data)
-        collection_data.append(Batch(batch_name, batch_data))
+#     collection_data = []
+#     for batch_name,batch_frame in collection_frame:
+#         batch_data = (generate_case_data(case_frame, epochs_data_todo)
+#                         for case_frame in batch_frame)
+#         if preload:
+#             batch_data = list(batch_data)
+#         collection_data.append(Batch(batch_name, batch_data))
 
-    return collection_data
+#     return collection_data

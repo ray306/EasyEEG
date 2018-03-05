@@ -19,10 +19,7 @@ def cmap_discretize(cmap, N):
 
 def refine_axis(ax, title, xticklabels, plot_params):
     xticks = ax.get_xticks()
-    # print(len(xticks))
-    # print(xticks)
-    # print(ax.get_xticklabels())
-    # print(ax.get_xticklabels()[0].get_text())
+
     if len(xticks)>=40:
         if xticklabels[-1] - xticklabels[0] < 500:
             step = 50
@@ -37,7 +34,13 @@ def refine_axis(ax, title, xticklabels, plot_params):
         xticklabels_fine = [i//step*step for i in xticklabels]
         xticklabels[0] += 1  # prevent label-xticklabels_min is zero
         xticks_fine = [(label_fine-xticklabels_min)/(label-xticklabels_min)*tick for tick,label,label_fine in zip(xticks,xticklabels,xticklabels_fine)]
-        # xticks_fine = [label_fine/label*tick for tick,label,label_fine in zip(xticks,xticklabels,xticklabels_fine)]
+        xticks_fine[0] = 0  # prevent xtick_min is less than zero
+        
+        # padding the last x number in case it lost 
+        if xticks[-1] - xticks_fine[-1] > (xticks_fine[-1] - xticks_fine[-2])/2:
+            xticks_fine += [xticks_fine[-1] + xticks_fine[-1] - xticks_fine[-2]]
+            xticklabels_fine += [xticklabels_fine[-1] + xticklabels_fine[-1] - xticklabels_fine[-2]]
+            
         ax.set_xticks(xticks_fine)
         ax.set_xticklabels(xticklabels_fine,rotation=45,fontname='Consolas',size='large')
     else:
@@ -96,9 +99,10 @@ def significant(ax, pv_data, win, sig_limit=0.05):
     cbar_ax.set_yticklabels(['<0.05', '<0.01', '<0.001'])
 
 def plot_waveform(ax, data, plot_params):
-    flat_data = data.stack('time')
+    flat_data = pd.DataFrame(data.stack('time'))
     # flat_data.reset_index(level=['condition_group','time'], inplace=True)
     flat_data.reset_index(level=flat_data.index.names, inplace=True)
+    
     
     if 'condition_group' in flat_data.columns:
         flat_data['condition_group'] = flat_data['condition_group'].apply(lambda x: ' '.join(x.split(' ')[1:]))
@@ -124,10 +128,7 @@ def plot_waveform(ax, data, plot_params):
     sns.tsplot(time="time", value=0, unit='subject', condition=group, data=flat_data, ax=ax, 
         err_style=plot_params['err_style'], legend=legend, color=plot_params['color'])
 
-    if type(flat_data.columns) is pd.MultiIndex:
-        xticklabels = flat_data[0].columns
-    else:
-        xticklabels = flat_data.columns
+    xticklabels = flat_data.columns
 
     refine_axis(ax, data.name, xticklabels, plot_params)
 
@@ -148,17 +149,11 @@ def plot_spectrum(ax, data, plot_params):
         data=flat_data, ax=ax, 
         err_style=plot_params['err_style'], legend=legend, color=plot_params['color'])
 
-    if type(flat_data.columns) is pd.MultiIndex:
-        xticklabels = flat_data[0].columns
-    else:
-        xticklabels = flat_data.columns
+    xticklabels = flat_data.columns
 
     refine_axis(ax, data.name, xticklabels, plot_params)
 
 def plot_heatmap(ax, data, plot_params):
-    if type(data.columns)==pd.MultiIndex:
-        data.columns = data.columns.get_level_values('time')
-
     cbar_ax = ax.get_figure().add_axes([0.95,0.4,0.01,0.2]) # [left, bottom, width, height]
     name = data.name
     if 're_assign' in plot_params:
@@ -186,10 +181,7 @@ def plot_heatmap(ax, data, plot_params):
     else:
         sns.heatmap(data,ax=ax,cbar_ax=cbar_ax,cmap=plot_params['color'])
 
-    if type(data.columns) is pd.MultiIndex:
-        xticklabels = data[0].columns
-    else:
-        xticklabels = data.columns
+    xticklabels = data.columns
 
     refine_axis(ax, data.name, xticklabels, plot_params)
 

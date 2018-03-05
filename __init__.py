@@ -25,4 +25,4 @@ def reload(module=None):
         importlib.reload(graph.figure_group) 
         importlib.reload(graph.figure_unit)
 
-print('Cafe loaded')
+print('EasyEEG loaded.')

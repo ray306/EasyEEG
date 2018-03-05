@@ -1,6 +1,7 @@
 from ..default import *
 from tqdm import tqdm
 from ..statistics import stats_methods
+import numexpr as ne
 
 # todo: group single or not, 2*2 or not
 # def check_availability(data,single_value_level=[],complex_value_level=[]):
@@ -19,13 +20,15 @@ from ..statistics import stats_methods
 #         if len(values)==1:
 #             raise Exception(f'level "{l}" should have more than one value, but {values} in there.')
 
-def check_availability(data, level, unique_value_count):
+def check_availability(data, level, condition):
     if level == 'time_group':
         values = list(data.columns.get_level_values(level).unique())
     else:
         values = list(data.index.get_level_values(level).unique())
-    if len(values)!=unique_value_count:
-        raise Exception(f'level "{level}"\'s unique_value_count should be {unique_value_count} , but {values} in there.')
+    target = len(values)
+    if not ne.evaluate(str(target)+condition):
+        raise Exception(
+            f'level "{level}"\'s unique_value_count should {condition} , but {values} in there.')
 
 def shuffle_on_level(df, level, within_subject=True, inplace=True):
     raw = list(zip(df.index.get_level_values('subject'),df.index.labels[df.index.names.index(level)],df.index.get_level_values('trial')))
@@ -138,6 +141,12 @@ def sampling(data,step_size='1ms',win_size='1ms',sample='mean'):
     return data
 
 'map and apply'
+# divide into units, convert the units, then combine them
+def convert(df, unit, func):
+    df_t = df.mean(level=unit)
+    converted_list = [func(data) for name, data in df_t.groupby(level=unit)]
+    return pd.concat(converted_list)
+
 # def roll_on_levels(df, func, arguments_dict=dict(), levels='time', prograssbar=True):
 #     col_level = df.columns.names[1]
 #     df = df.stack(col_level)
