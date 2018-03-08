@@ -108,7 +108,7 @@ def significant_channels_count(self, step_size='1ms', win_size='1ms', sample='me
             
         data_with_subject = case_raw_data.mean(level=['subject','condition_group','channel'])
         
-        check_availability(data_with_subject, 'condition_group', 2)
+        check_availability(data_with_subject, 'condition_group','==2')
 
         stats_result = roll_on_levels_and_compare(data_with_subject, stats_methods.t_test, levels=['time','channel'], 
                           between='condition_group', in_group='subject',prograssbar=True)

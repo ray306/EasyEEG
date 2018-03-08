@@ -61,7 +61,7 @@ def classification(self, step_size='1ms', win_size='1ms', sample='mean', run_mod
     @self.iter('all')
     def learn(case_raw_data):
         case_raw_data = sampling(case_raw_data, step_size, win_size, sample)
-        check_availability(case_raw_data, 'condition_group', 2) 
+        check_availability(case_raw_data, 'condition_group', '==2') 
 
         return roll_on_levels(case_raw_data, group_stats, arguments_dict=dict(run_model=run_model, reshape_X_method=reshape_X_method, reshape_Y_method=reshape_Y_method, fold=fold, test_size=test_size, extra_params=extra_params), levels='time', prograssbar=True, parallel=parallel)
 

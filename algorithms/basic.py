@@ -171,15 +171,21 @@ def convert(df, unit, func):
 #     return result.unstack(col_level)
 
 from concurrent.futures import ProcessPoolExecutor
-def roll_on_levels(df, func, arguments_dict=dict(), levels='time', prograssbar=True, parallel=False):
+def roll_on_levels(df, func, arguments_dict=dict(), levels='time', prograssbar=True, parallel=False, sequence_size=1):
     col_level = df.columns.names[1]
     df = df.stack(col_level)
     data_results = []
     annotation_results = []
     group_ids = []
+    if sequence_size==1:
+        groups_to_roll = df.groupby(level=levels)
+    else:
+        '[beta] for time-sequence models'
+        # group_ids = [group_id for group_id, group_data in df.groupby(level=levels)]
+        groups_to_roll = df.rolling(sequence_size,on='time',axis=0)
 
     if parallel is False:
-        for group_id,group_data in tqdm(df.groupby(level=levels), ncols=0, disable=(not prograssbar)):
+        for group_id,group_data in tqdm(groups_to_roll, ncols=0, disable=(not prograssbar)):
             result_one_group = func(group_data, **arguments_dict)
 
             group_ids.append(group_id)
@@ -196,7 +202,7 @@ def roll_on_levels(df, func, arguments_dict=dict(), levels='time', prograssbar=T
         with ProcessPoolExecutor(max_workers=parallel) as executor:
             tasks = [(group_id, 
                       executor.submit(func, group_data, **arguments_dict))
-                    for group_id,group_data in df.groupby(level=levels)]
+                    for group_id,group_data in groups_to_roll]
             with tqdm(total=len(tasks), disable=(not prograssbar)) as pbar:  
                 while 1:
                     count_doned = sum([task.done() for group_id,task in tasks])

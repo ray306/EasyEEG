@@ -25,19 +25,19 @@ def tanova(self,step_size='1ms',win_size='1ms',sample='mean',shuffle=500,mode=1,
     @self.iter('all')
     def to_tanova1(case_raw_data):
         case_raw_data = sampling(case_raw_data, step_size, win_size, sample)
-        check_availability(case_raw_data, 'condition_group', 2)
+        check_availability(case_raw_data, 'condition_group', '==2')
         return roll_on_levels(case_raw_data, sub_func, arguments_dict=dict(shuffle=shuffle, within_subject=False), levels='time', prograssbar=True, parallel=parallel)
 
     @self.iter('all')
     def to_tanova2(case_raw_data):
         case_raw_data = sampling(case_raw_data, step_size, win_size, sample)
-        check_availability(case_raw_data, 'condition_group', 2)
+        check_availability(case_raw_data, 'condition_group', '==2')
         return roll_on_levels(case_raw_data, sub_func, arguments_dict=dict(shuffle=shuffle, within_subject=True), levels='time', prograssbar=True, parallel=parallel)
 
     @self.iter('average')
     def to_tanova3(case_raw_data):
         case_raw_data = sampling(case_raw_data, step_size, win_size, sample)
-        check_availability(case_raw_data, 'condition_group', 2)
+        check_availability(case_raw_data, 'condition_group', '==2')
         return roll_on_levels(case_raw_data, sub_func, arguments_dict=dict(shuffle=shuffle, within_subject=True), levels='time', prograssbar=True, parallel=parallel)
 
     if mode==1:
@@ -57,7 +57,7 @@ def cosine_distance_dynamics(self):
     # with the decorator, we can just focuse on case data instead of batch/collection data
     @self.iter('average')
     def calc(case_raw_data):
-        check_availability(case_raw_data, 'condition_group', 2)
+        check_availability(case_raw_data, 'condition_group', '==2')
         return roll_on_levels(case_raw_data, calc_cosD, levels='time')
 
     cosine_distance_collection = calc()

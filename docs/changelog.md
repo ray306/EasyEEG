@@ -4,6 +4,7 @@
 
 # 0.8.3 (todo)
 - (todo) Make the "extract()" more flexible
+- (todo) Integrate figures with labels into one
 
 # 0.8.2 (2018-03-05)
 - Removed 'time_group' index which are unnecessary in Analyzed_Result
