@@ -74,6 +74,8 @@ def select_subplot_type(subplot_type, ax, data, annotation, plot_params):
         figure_unit.plot_topograph(ax, data, plot_params)
     elif subplot_type == 'heatmap':
         figure_unit.plot_heatmap(ax, data, plot_params)
+        if type(annotation) == pd.DataFrame:
+            figure_unit.heatmap_significant(ax, annotation, plot_params['sig_limit'])
     else:
         raise Exception(f'Unsupported subplot_type "{subplot_type}"')
 

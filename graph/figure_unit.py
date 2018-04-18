@@ -19,8 +19,11 @@ def cmap_discretize(cmap, N):
 
 def refine_axis(ax, title, xticklabels, plot_params):
     xticks = ax.get_xticks()
+    #  or len(xticklabels) > 40
+    if len(xticks) >= 40:
+        if type(xticklabels) is pd.MultiIndex:
+            xticklabels = xticklabels.get_level_values('time')
 
-    if len(xticks)>=40:
         if xticklabels[-1] - xticklabels[0] < 500:
             step = 50
         else:
@@ -59,6 +62,22 @@ def refine_axis(ax, title, xticklabels, plot_params):
 
     if 'ylim' in plot_params:
         ax.set_ylim(plot_params['ylim']) # limitation on y-axis
+
+
+def heatmap_significant(ax, pv_data, sig_limit=0.05):
+    from matplotlib.patches import Rectangle
+
+    significance = [(col_index[1], row_index[0])
+                    for row_index, row in pv_data.iterrows() for col_index, cell in row.iteritems()
+                    if cell < sig_limit]
+    # print(significance)
+    for x, y in significance:
+        ax.add_patch(Rectangle((pv_data.columns.get_level_values('time').max() - x, 
+                                pv_data.index.get_level_values('freq').max() - y), 
+                                2, 1, alpha=0.5))
+
+
+
 
 def significant(ax, pv_data, win, sig_limit=0.05): 
     win = int(win[:-2])

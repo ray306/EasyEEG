@@ -54,7 +54,7 @@ def Spectrum(self, compare=False, freq_span=(0,30), target='power', comparison_p
     return structure.Analyzed_data('Spectrum', spetrum_collection, stats_data, default_plot_params)
 
 # grand average
-def Time_frequency(self, freq_span=(0,30)):
+def Time_frequency(self, compare=False, freq_span=(0, 30)):
     # with the decorator, we can just focuse on case data instead of batch/collection data
     @self.iter('average')
     def to_tf(case_raw_data):
@@ -71,15 +71,61 @@ def Time_frequency(self, freq_span=(0,30)):
             #     names=['condition_group','channel_group','frequency'])
     
             cwt_result = signal.cwt(np.array(data)[0], signal.ricker, widths=widths)
-            cwt_result = pd.DataFrame(cwt_result,index=freqs[::-1],columns=data.columns)
-
+            cwt_result = pd.DataFrame(cwt_result, columns=data.columns)
+            cwt_result.index = pd.MultiIndex.from_tuples(
+                [(name[0], name[1], i) for i in freqs[::-1]], names=('condition_group', 'channel_group', 'freq'))
+            
             tf_df.append(cwt_result)
         
+        tf_df = pd.concat(tf_df)
+
+        for level in ['condition_group', 'channel_group']:
+            if len(tf_df.index.get_level_values(level).unique()) == 2:
+                tf_df = [i for ind,i in tf_df.groupby(level=level)]
+                tf_df[0].index = tf_df[0].index.droplevel(level)
+                tf_df[1].index = tf_df[1].index.droplevel(level)
+                tf_df = tf_df[0] - tf_df[1]
+        
+        tf_df.index = tf_df.index.get_level_values('freq')
+
+        return tf_df
+
+    @self.iter('average')
+    def to_tf_group_level(case_raw_data):
+        erp = case_raw_data.mean(level=['condition_group', 'channel_group','subject'])
+
+        tf_df = []
+        for name, data in erp.groupby(level=['condition_group', 'channel_group', 'subject']):
+            
+            freqs = np.arange(freq_span[0], freq_span[1])
+            if freq_span[0] == 0:
+                widths = freqs+0.001
+            else:
+                widths = freqs
+
+            cwt_result = signal.cwt(
+                np.array(data)[0], signal.ricker, widths=widths)
+            
+            cwt_result = pd.DataFrame(
+                cwt_result, columns=data.columns)
+            cwt_result.index = pd.MultiIndex.from_tuples(
+                [(name[0], name[1], name[2], i) for i in freqs[::-1]], names=('condition_group', 'channel_group', 'subject', 'freq'))
+            
+            tf_df.append(cwt_result)
+
         tf_df = pd.concat(tf_df)
         return tf_df
     
     tf_collection = to_tf()
 
-    default_plot_params = dict(plot_type=['direct','heatmap'], x_title='time', y_title='frequency', 
+    if compare:
+        tf_group_level_collection = to_tf_group_level()
+        # print(tf_group_level_collection)
+        stats_data = [stats_compare(tf_batch, comparison_params, levels=['time', 'freq'], between='condition_group', in_group='subject')
+                      for tf_batch in tf_group_level_collection]
+    else:
+        stats_data = None
+
+    default_plot_params = dict(plot_type=['direct', 'heatmap'], x_title='time', y_title='frequency', sig_limit=0.05,
         color="RdBu_r", style='white', grid=False, cbar_title='Power')
-    return structure.Analyzed_data('Time Frequency', tf_collection, None, default_plot_params)
+    return structure.Analyzed_data('Time Frequency', tf_collection, stats_data, default_plot_params)

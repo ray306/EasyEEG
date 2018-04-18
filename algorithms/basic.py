@@ -170,6 +170,20 @@ def convert(df, unit, func):
 #     recover_index(result, df, 'condition_group')
 #     return result.unstack(col_level)
 
+
+class OverlappedSequence():
+    def __init__(self, df, sequence_size):
+        self.df = df
+        self.sequence_size = sequence_size
+        self.count = len(df.columns)
+
+    def __len__(self):
+        return self.count
+
+    def __iter__(self):
+        return (self.df.iloc[:, i-self.sequence_size:i] for i in range(self.sequence_size, self.count))
+
+
 from concurrent.futures import ProcessPoolExecutor
 def roll_on_levels(df, func, arguments_dict=dict(), levels='time', prograssbar=True, parallel=False, sequence_size=1):
     col_level = df.columns.names[1]
@@ -181,8 +195,7 @@ def roll_on_levels(df, func, arguments_dict=dict(), levels='time', prograssbar=T
         groups_to_roll = df.groupby(level=levels)
     else:
         '[beta] for time-sequence models'
-        # group_ids = [group_id for group_id, group_data in df.groupby(level=levels)]
-        groups_to_roll = df.rolling(sequence_size,on='time',axis=0)
+        groups_to_roll = OverlappedSequence(df, sequence_size)
 
     if parallel is False:
         for group_id,group_data in tqdm(groups_to_roll, ncols=0, disable=(not prograssbar)):

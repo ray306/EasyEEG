@@ -1,10 +1,17 @@
 # Future works: 
 - correct()
 - Better support for parallel cores
+- classification and regression
 
 # 0.8.3 (todo)
 - (todo) Make the "extract()" more flexible
 - (todo) Integrate figures with labels into one
+- (todo) classification across timepints and across trials
+- (todo) roll_on_level on time and time_group
+
+# 0.8.2.1 
+- Now time-frequency supports the power difference between two conditions
+- Fixed a issue when plot the heatmap
 
 # 0.8.2 (2018-03-05)
 - Removed 'time_group' index which are unnecessary in Analyzed_Result
