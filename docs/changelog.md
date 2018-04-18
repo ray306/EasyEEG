@@ -9,7 +9,7 @@
 - (todo) classification across timepints and across trials
 - (todo) roll_on_level on time and time_group
 
-# 0.8.2.1 
+# 0.8.2.2 
 - Now time-frequency supports the power difference between two conditions
 - Fixed a issue when plot the heatmap
 
