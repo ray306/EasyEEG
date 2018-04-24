@@ -64,17 +64,17 @@ structure.Analyzed_data.plot = plot
 def select_subplot_type(subplot_type, ax, data, annotation, plot_params):
     if subplot_type == 'waveform':
         figure_unit.plot_waveform(ax, data, plot_params)
-        if type(annotation) == pd.DataFrame:
+        if 'compare' in plot_params and plot_params['compare']==True:
             figure_unit.significant(ax, annotation, plot_params['win'], plot_params['sig_limit'])
     elif subplot_type == 'spectrum':
         figure_unit.plot_spectrum(ax, data, plot_params)
-        if type(annotation) == pd.DataFrame:
+        if 'compare' in plot_params and plot_params['compare']==True:
             figure_unit.significant(ax, annotation, plot_params['win'], plot_params['sig_limit'])
     elif subplot_type == 'topograph':
         figure_unit.plot_topograph(ax, data, plot_params)
     elif subplot_type == 'heatmap':
         figure_unit.plot_heatmap(ax, data, plot_params)
-        if type(annotation) == pd.DataFrame:
+        if 'compare' in plot_params and plot_params['compare']==True:
             figure_unit.heatmap_significant(ax, annotation, plot_params['sig_limit'])
     else:
         raise Exception(f'Unsupported subplot_type "{subplot_type}"')

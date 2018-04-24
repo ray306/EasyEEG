@@ -180,6 +180,13 @@ class Analyzed_data():
             self.annotation = [None] * len(data)
         self.default_plot_params = default_plot_params
 
+    def __repr__(self):
+        print('Name: ',self.analysis_name,'\n')
+        for ind,i in enumerate(self.data):
+            print(f'Head lines in data {ind}:')
+            print(i.head())
+        return ''
+
     def correct(self, on_annotation=False, method='fdr_bh'):
         from .statistics.stats_methods import multiple_comparison_correction
         if on_annotation:

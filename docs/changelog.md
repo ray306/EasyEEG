@@ -9,6 +9,15 @@
 - (todo) classification across timepints and across trials
 - (todo) roll_on_level on time and time_group
 
+# 0.8.2.5
+- Now the AnalyzeData has the __repr__ method
+- Fixed a issue of TANOVA plot
+- Fixed a issue of saving AnalyzeData
+- Renamed the method 'RMS' to 'GFP'
+
+# 0.8.2.3
+- Renamed the parameter 'mode' to 'strategy' in the method 'TANOVA'
+
 # 0.8.2.2 
 - Now time-frequency supports the power difference between two conditions
 - Fixed a issue when plot the heatmap

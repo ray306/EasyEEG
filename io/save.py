@@ -54,7 +54,7 @@ def save_result(result, filepath):
         pickle.dump(result.data, f)
         pickle.dump(result.annotation, f)
         pickle.dump(result.default_plot_params, f)
-        pickle.dump([i.name for i in result.data if type(i) is pd.DataFrame], f)
-        pickle.dump([i.name for i in result.annotation if type(i) is pd.DataFrame], f)
+        pickle.dump([i.name if hasattr(i, 'name') else '' for i in result.data if type(i) is pd.DataFrame], f)
+        pickle.dump([i.name if hasattr(i,'name') else '' for i in result.annotation if type(i) is pd.DataFrame], f)
 
     print('Result saved.')

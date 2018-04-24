@@ -20,7 +20,7 @@ def sub_func(group_data, shuffle=500, within_subject=True):
     pvalue = stats_methods.get_pvalue_from_distribution(result_real, dist_baseline)
     return pvalue, result_real
 
-def tanova(self,step_size='1ms',win_size='1ms',sample='mean',shuffle=500,mode=1,parallel=False):
+def tanova(self,step_size='1ms',win_size='1ms',sample='mean',shuffle=500,strategy=1,parallel=False):
     # with the decorator, we can just focuse on case data instead of batch/collection data
     @self.iter('all')
     def to_tanova1(case_raw_data):
@@ -40,11 +40,11 @@ def tanova(self,step_size='1ms',win_size='1ms',sample='mean',shuffle=500,mode=1,
         check_availability(case_raw_data, 'condition_group', '==2')
         return roll_on_levels(case_raw_data, sub_func, arguments_dict=dict(shuffle=shuffle, within_subject=True), levels='time', prograssbar=True, parallel=parallel)
 
-    if mode==1:
+    if strategy==1:
         tanova_collection, annotation_collection = to_tanova1()
-    elif mode==2:
+    elif strategy==2:
         tanova_collection, annotation_collection = to_tanova2()
-    elif mode==3:
+    elif strategy==3:
         tanova_collection, annotation_collection = to_tanova3()
 
     default_plot_params = dict(title='TANOVA',plot_type=['direct','heatmap'], x_len=12, re_assign=[(0,0.01,0.05,0.1,1),(4,3,2,1)],
