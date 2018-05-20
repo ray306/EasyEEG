@@ -3,23 +3,6 @@ from tqdm import tqdm
 from ..statistics import stats_methods
 import numexpr as ne
 
-# todo: group single or not, 2*2 or not
-# def check_availability(data,single_value_level=[],complex_value_level=[]):
-#     for l in single_value_level:
-#         if l == 'time_group':
-#             values = list(data.columns.get_level_values(l).unique())
-#         else:
-#             values = list(data.index.get_level_values(l).unique())
-#         if len(values)>1:
-#             raise Exception(f'level "{l}" should have only one value, but {values} in there.')
-#     for l in complex_value_level:
-#         if l == 'time_group':
-#             values = list(data.columns.get_level_values(l).unique())
-#         else:
-#             values = list(data.index.get_level_values(l).unique())
-#         if len(values)==1:
-#             raise Exception(f'level "{l}" should have more than one value, but {values} in there.')
-
 def check_availability(data, level, condition):
     if level == 'time_group':
         values = list(data.columns.get_level_values(level).unique())
@@ -27,20 +10,22 @@ def check_availability(data, level, condition):
         values = list(data.index.get_level_values(level).unique())
     target = len(values)
     if not ne.evaluate(str(target)+condition):
-        raise Exception(
-            f'level "{level}"\'s unique_value_count should {condition} , but {values} in there.')
+        raise Exception(f'level "{level}"\'s unique_value_count should {condition} , but {values} in there.')
 
 def shuffle_on_level(df, level, within_subject=True, inplace=True):
     raw = list(zip(df.index.get_level_values('subject'),df.index.labels[df.index.names.index(level)],df.index.get_level_values('trial')))
+
     if within_subject:
         unique = list(set(raw)) # unique ind
         unique.sort(key=lambda x:x[0]) #需要先排序，然后才能groupby
         g = itertools.groupby(unique,lambda x:x[0])
         mapping = dict()
+
         for key,ind in g:
             ind = list(ind)
             new_ind = list(zip([i[0] for i in ind],np.random.permutation([i[1] for i in ind]),[i[2] for i in ind]))
             mapping.update(dict(zip(ind,new_ind)))
+            
         group_labels = [mapping[i][1] for i in raw]
         # within_labels = df.index.get_level_values(within)
         # group_labels = df.index.get_level_values(level)
@@ -64,7 +49,6 @@ def shuffle_on_level(df, level, within_subject=True, inplace=True):
         group_labels = [mapping[i][1] for i in raw]
 
     if inplace:
-        # print(level,'\n',group_labels)
         df.index = df.index.set_labels(group_labels,level=level)
     else:
         df_new = df.copy()
@@ -76,16 +60,17 @@ def add_index(df, name, value):
     df.set_index(name, append=True, inplace=True)
 
 def recover_index(df, old_df, name):
-    if '_group' in name:
-        values = old_df.index.get_level_values(name).map(lambda x: '0 '+' '.join(x.split(' ')[1:])).unique()
-    else:
-        values = old_df.index.get_level_values(name).unique()
-    if len(values)==1: # make sure if the value in old_df index is unique'
-        value = values[0]
-    else:
-        value = ','.join(values)
-        # raise Exception(f'The values in level {name} should be unique')
-    add_index(df, name, value)
+    if name not in df.index.names:
+        if '_group' in name:
+            values = old_df.index.get_level_values(name).map(lambda x: '0 '+' '.join(x.split(' ')[1:])).unique()
+        else:
+            values = old_df.index.get_level_values(name).unique()
+        if len(values)==1: # make sure if the value in old_df index is unique'
+            value = values[0]
+        else:
+            value = ','.join(values)
+            # raise Exception(f'The values in level {name} should be unique')
+        add_index(df, name, value)
 
 def average(df, keep=None, remove=None):
     if keep==None:
@@ -123,6 +108,7 @@ def window_sampling(df, win_size, sample='mean'):
     for idx,group_data in df.groupby(axis=1,level='time_group'):
         group_data.columns.set_levels([pd.Timedelta(tp) for tp in group_data.columns.levels[1]], level=1, inplace=True)
         group_data_new = group_data.resample(win_size, axis=1, how='mean', level=1)
+        
         group_data_new.columns = group_data_new.columns + pd.Timedelta(win_size[:-1]+'ns')/2 # loffset of `resample` doesn't work, so I add this line 
         if group_data_new.columns[-1]>group_data[0].columns[-1]:
             del group_data_new[group_data_new.columns[-1]]
@@ -144,7 +130,7 @@ def sampling(data,step_size='1ms',win_size='1ms',sample='mean'):
 # divide into units, convert the units, then combine them
 def convert(df, unit, func):
     df_t = df.mean(level=unit)
-    converted_list = [func(data) for name, data in df_t.groupby(level=unit)]
+    converted_list = [func(name, data) for name, data in df_t.groupby(level=unit)]
     return pd.concat(converted_list)
 
 # def roll_on_levels(df, func, arguments_dict=dict(), levels='time', prograssbar=True):
@@ -154,13 +140,12 @@ def convert(df, unit, func):
 #     group_ids = []
 
 #     for group_id,group_data in tqdm(df.groupby(level=levels), ncols=0, disable=(not prograssbar)):
-#         # print(group_data)
 #         result_one_group = func(group_data, **arguments_dict)
 
 #         group_ids.append(group_id)
 #         result.append(result_one_group)
 
-#     if type(levels)==str or len(levels)==1:
+#     if isinstance(levels, str) or len(levels)==1:
 #         index = pd.Index(group_ids, name=levels)
 #     else:
 #         index = pd.MultiIndex.from_tuples(group_ids, names=levels)
@@ -184,9 +169,20 @@ class OverlappedSequence():
         return (self.df.iloc[:, i-self.sequence_size:i] for i in range(self.sequence_size, self.count))
 
 
+def data_to_df(data, index, index_levels):
+    if isinstance(index_levels, str) or len(index_levels) == 1:
+        index = pd.Index(index, name=index_levels)
+    else:
+        index = pd.MultiIndex.from_tuples(index, names=index_levels)
+    return pd.DataFrame(data, index=index)
+
 from concurrent.futures import ProcessPoolExecutor
 def roll_on_levels(df, func, arguments_dict=dict(), levels='time', prograssbar=True, parallel=False, sequence_size=1):
-    col_level = df.columns.names[1]
+    if len(df.columns.names) > 1:
+        col_level = df.columns.names[1]
+    else:
+        col_level = df.columns.names[0]
+
     df = df.stack(col_level)
     data_results = []
     annotation_results = []
@@ -202,13 +198,14 @@ def roll_on_levels(df, func, arguments_dict=dict(), levels='time', prograssbar=T
             result_one_group = func(group_data, **arguments_dict)
 
             group_ids.append(group_id)
-            if type(result_one_group) is tuple:
+            if isinstance(result_one_group, tuple):
                 if len(result_one_group)==2:
                     data_results.append(result_one_group[0])
                     annotation_results.append(result_one_group[1])
                 else:
                     raise Exception('The return value of func should not above 2!')
             else:
+                
                 data_results.append(result_one_group)
     else:
         if parallel is True: parallel = None # if max_workers is None or not given, it will default to the number of processors on the machine
@@ -224,9 +221,10 @@ def roll_on_levels(df, func, arguments_dict=dict(), levels='time', prograssbar=T
                         break
 
         for group_id,task in tasks:
-            group_ids.append(group_id)
             result_one_group = task.result()
-            if type(result_one_group) is tuple:
+
+            group_ids.append(group_id)
+            if isinstance(result_one_group, tuple):
                 if len(result_one_group)==2:
                     data_results.append(result_one_group[0])
                     annotation_results.append(result_one_group[1])
@@ -235,49 +233,42 @@ def roll_on_levels(df, func, arguments_dict=dict(), levels='time', prograssbar=T
             else:
                 data_results.append(result_one_group)
 
-    if type(levels)==str or len(levels)==1:
-        index = pd.Index(group_ids, name=levels)
-    else:
-        index = pd.MultiIndex.from_tuples(group_ids, names=levels)
-    
-    data_results = pd.DataFrame(data_results, index=index)
+    data_results = data_to_df(data_results, group_ids, levels)
+    "why 'condition_group' here"
     recover_index(data_results, df, 'condition_group')
+    index = data_results.index
+    data_results = data_results.unstack(col_level)[0]
 
     if len(annotation_results)==0:
-        return data_results.unstack(col_level)
+        return data_results
     else:
         annotation_results = pd.DataFrame(annotation_results, index=index)
         recover_index(annotation_results, df, 'condition_group')
-        return data_results.unstack(col_level), annotation_results.unstack(col_level)
+        annotation_results = annotation_results.unstack(col_level)
+        if isinstance(annotation_results.columns, pd.MultiIndex):
+            annotation_results.columns.names = ['subject', col_level]
+            annotation_results = annotation_results.stack('subject')
+        return data_results, annotation_results
 
-# ugly code. To do.
 def roll_on_levels_and_compare(df, func, arguments_dict=dict(), levels='time', between='condition_group', in_group='subject',prograssbar=True):
-    col_level = df.columns.names[1]
-    df = df.stack(col_level)
-    result = []
-    group_ids = []
-
-    for group_id,group_data in tqdm(df.groupby(level=levels), ncols=0, disable=(not prograssbar)):
-        data_sub = [group_data.mean(level=in_group).mean(axis=1) 
-            for group_id,group_data in group_data.groupby(level=between)]
-        
-        # ipdb.set_trace()
-        result_one_group = func(data_sub, **arguments_dict)['pvalue']
-        # re_add_name = group_data.index.get_level_values(between)[0][2:]
-        
-        group_ids.append(group_id)
-        result.append(result_one_group)
-
-    if type(levels)==str or len(levels)==1:
-        index = pd.Index(group_ids, name=levels)
+    if len(df.columns.names)>1:
+        col_level = df.columns.names[1]
     else:
-        index = pd.MultiIndex.from_tuples(group_ids, names=levels)
+        col_level = df.columns.names[0]
 
-    result = pd.DataFrame(result, index=index)
+    df = df.stack(col_level)
+    data_results = []
+    group_ids = []
+    for group_id,group_data in tqdm(df.groupby(level=levels), ncols=0, disable=(not prograssbar)):
+        data_sub = [d.mean(level=in_group) for idx,d in group_data.groupby(level=between)]
+        result_one_group = func(data_sub, **arguments_dict)['pvalue']    
+        group_ids.append(group_id)
+        data_results.append(result_one_group)
     
-    recover_index(result, group_data, between)
+    data_results = data_to_df(data_results, group_ids, levels)
+    recover_index(data_results, group_data, between)
 
-    return result.unstack(col_level)
+    return data_results.unstack(col_level)[0]
 
 def stats_compare(df, comparison, levels='time', between='condition_group', in_group='subject'):
     condition_groups = df.index.get_level_values(between).unique()
@@ -289,4 +280,12 @@ def stats_compare(df, comparison, levels='time', between='condition_group', in_g
         return pval_result
     else:
         return None
+
+def subtract(raw, between, align):
+    groups_data = [data for idx, data in raw.groupby(level=between)]
+    result = groups_data[0].mean(
+        level=align) - groups_data[1].mean(level=align)
+    # re-add level `between` to index
+    recover_index(result, raw, between)
+    return result
 

@@ -3,7 +3,7 @@ from .default import *
 Case = namedtuple('Case',['name','val'])
 Batch = namedtuple('Batch',['name','val'])
 
-def parsing(collection_script, epochs_data):
+def parsing(batch_script, epochs_data):
     def conditions_filter_by_factor(query_str):
         cond_format = epochs_data.info['conditions']['format']
         # if there is anything between brackets
@@ -149,48 +149,43 @@ def parsing(collection_script, epochs_data):
         elif sep==',':
             return [str(i) for i in li]
 
-    if type(collection_script) in [str,dict]:
-        collection_script = [collection_script]
-    collection_frame = []
-    # iter the collection
-    for batch_script in collection_script:
-        # convert the description into dict if the description is a string
-        if type(batch_script) is str:
-            batch_script = batch_str_parser(batch_script)
-        elif type(batch_script) is not dict:
-            raise Exception(f'The description "{batch_script}" should be a string or dict!')
-        
-        # convert into full-description dict
-        batch_script_full = dict()
-        for key in ['subjects', 'conditions', 'trials', 'channels', 'timepoints']:
-            if key in batch_script:
-                if batch_script[key] == 'each':
-                    batch_script_full[key] = combine(key,',')
-                else:
-                    if type(batch_script[key]) is str:
-                        batch_script_full[key] = batch_script[key].split(',')
-                    else:
-                        batch_script_full[key] = batch_script[key]
+    # convert the description into dict if the description is a string
+    if isinstance(batch_script, str):
+        batch_script = batch_str_parser(batch_script)
+    elif not isinstance(batch_script, dict):
+        raise Exception(f'The description "{batch_script}" should be a string or dict!')
+    
+    # convert into full-description dict
+    batch_script_full = dict()
+    for key in ['subjects', 'conditions', 'trials', 'channels', 'timepoints']:
+        if key in batch_script:
+            if batch_script[key] == 'each':
+                batch_script_full[key] = combine(key,',')
             else:
-                batch_script_full[key] = combine(key,'+')
+                if isinstance(batch_script[key], str):
+                    batch_script_full[key] = batch_script[key].split(',')
+                else:
+                    batch_script_full[key] = batch_script[key]
+        else:
+            batch_script_full[key] = combine(key,'+')
 
-            # parse the string of case
-            batch_script_full[key] = [case_parser(key,i) for i in batch_script_full[key]]
-        
-        batch_name = []
-        for batch_k,batch_v in batch_script_full.items():
-            batch_desp = ','.join([case_v.name for case_v in batch_v])
-            if batch_desp!='All':
-                batch_name.append(batch_desp)
+        # parse the string of case
+        batch_script_full[key] = [case_parser(key,i) for i in batch_script_full[key]]
+    
+    batch_name = []
+    for batch_k,batch_v in batch_script_full.items():
+        batch_desp = ','.join([case_v.name for case_v in batch_v])
+        if batch_desp!='All':
+            batch_name.append(batch_desp)
 
-        # Get the cartesian product of the dict
-        batch_frame = []
-        for case_frame in list(itertools.product(*batch_script_full.values())):
-            batch_frame.append(case_frame)
+    # Get the cartesian product of the dict
+    batch_frame = []
+    for case_frame in list(itertools.product(*batch_script_full.values())):
+        batch_frame.append(case_frame)
 
-        collection_frame.append(Batch(batch_name, batch_frame))
+    batch_frame = Batch(batch_name, batch_frame)
 
-    return collection_frame
+    return batch_frame
 
 def filter(epochs_data, subject=slice(None), condition=slice(None), trial=slice(None), channel=slice(None), timepoint=slice(None), filter_dict=dict()):
     if 'subject' in filter_dict:
@@ -207,6 +202,7 @@ def filter(epochs_data, subject=slice(None), condition=slice(None), trial=slice(
     return epochs_data.loc[ids[subject,condition,trial,channel],ids[timepoint]]
 
 def generate_case_data(case_frame, epochs_data_todo):
+
     case_frame_dict = dict()
     for sub_case,sub_case_key in zip(case_frame,['subject','condition','trial','channel','timepoint']):
         case_frame_dict[sub_case_key+'_name'] = sub_case[0]
@@ -258,17 +254,19 @@ def generate_case_data(case_frame, epochs_data_todo):
                 group_data.index.set_levels(
                                 [f'{group_idx} {i}' for i in group_data.index.levels[levels.index(target_level)]],
                                         target_level,inplace=True)
-
+                                    
             data_t.append(group_data)
 
         extracted_data = pd.concat(data_t)
         extracted_data.sort_index(inplace=True)
-    
+        
     for target_level in levels[:-1]:
         # extracted_data[target_level+'_group'] = [i.split(' ')[0] for i in extracted_data.index.get_level_values(target_level)]
         extracted_data[target_level+'_group'] = [i.split(' ')[0]+' '+case_frame_dict[target_level+'_name'] for i in extracted_data.index.get_level_values(target_level)]
         extracted_data.set_index(target_level+'_group', append=True, inplace=True)
+        
         extracted_data.columns.set_levels(list(extracted_data.columns.levels[1][:-1]), level=1, inplace=True)
+        
         extracted_data.index.set_levels(
                     [' '.join(i.split(' ')[1:]) for i in extracted_data.index.levels[levels.index(target_level)]], 
                     target_level,inplace=True)
@@ -276,22 +274,3 @@ def generate_case_data(case_frame, epochs_data_todo):
     extracted_data.columns.names = ['time_group','time']
     extracted_data.name = [case_frame_dict[target_level+'_name'] for target_level in levels]
     return extracted_data
-
-# '''to be deprecated'''
-# def extract(epochs, collection_script, average=False, preload=False):
-#     collection_frame = parsing(collection_script, epochs)    
-
-#     if average:
-#         epochs_data_todo = epochs.average
-#     else:
-#         epochs_data_todo = epochs.all
-
-#     collection_data = []
-#     for batch_name,batch_frame in collection_frame:
-#         batch_data = (generate_case_data(case_frame, epochs_data_todo)
-#                         for case_frame in batch_frame)
-#         if preload:
-#             batch_data = list(batch_data)
-#         collection_data.append(Batch(batch_name, batch_data))
-
-#     return collection_data

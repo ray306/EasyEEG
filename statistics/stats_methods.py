@@ -1,7 +1,7 @@
 from ..default import *
 
 def multiple_comparison_correction(pvs_list, method='fdr_bh'):
-    if method == 'smooth':
+    if method == 'cluster':
         def correct(v):
             level = 0.05
             v = np.concatenate(([1],v,[1]))
@@ -24,7 +24,7 @@ def t_test(values):
     t, pv = scipy.stats.ttest_rel(a,b)
     return {'pvalue':pv, 'effect':t}
 
-def permutation_test(values,reps=1000):
+def permutation_test(values, reps=1000, alternative='two-sided'):
     values = np.array(values)
     if len(values)==2:
         pv,t = two_sample(values[0],values[1], reps=reps,stat=lambda u,v: mean(u-v),alternative='two-sided')
@@ -67,16 +67,16 @@ def permutation_on_condition(data,method,shuffle_count=1000):
 
 def fdr(pvs):
     re_calc = lambda v: statsmodels.sandbox.stats.multicomp.multipletests(v, 0.05, 'fdr_bh')[1]
-    if type(pvs) is pd.DataFrame:
+    if isinstance(pvs, pd.DataFrame):
         fdr = [re_calc(i) for i in pvs.values]
         pvs_new = pd.DataFrame(fdr, index=pvs.index, columns=pvs.columns)
-    elif type(pvs) is pd.Series:
+    elif isinstance(pvs, pd.Series):
         fdr = re_calc(pvs.values)
         pvs_new = pd.Series(fdr, index=pvs.index, name=pvs.name)
-    elif type(pvs) is dict:
+    elif isinstance(pvs, dict):
         fdr = re_calc(pvs.values())
         pvs_new = dict(zip(pvs.keys(),fdr))
-    elif type(pvs) is list:
+    elif isinstance(pvs, list):
         pvs_new = re_calc(pvs)
     else:
         raise ValueError('Only support pd.DataFrame, pd.Series,dict, and list')

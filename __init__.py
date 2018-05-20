@@ -18,11 +18,11 @@ def reload(module=None):
         importlib.reload(structure.group)
         importlib.reload(group)
         importlib.reload(algorithms)
-        if module != None: 
-            importlib.reload(module)  
         importlib.reload(algorithms.basic)
         importlib.reload(algorithms.stats_methods) 
         importlib.reload(graph.figure_group) 
         importlib.reload(graph.figure_unit)
+        if module != None:
+            importlib.reload(module)
 
 print('EasyEEG loaded.')

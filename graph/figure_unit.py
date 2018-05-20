@@ -5,7 +5,7 @@ from pylab import get_cmap
 from matplotlib.patches import Rectangle
 
 def cmap_discretize(cmap, N):
-    if type(cmap) == str:
+    if isinstance(cmap, str):
         cmap = get_cmap(cmap)
     colors_i = np.concatenate((np.linspace(0.1, 1., N), (0.,0.,0.,0.)))
     colors_rgba = cmap(colors_i)
@@ -17,11 +17,12 @@ def cmap_discretize(cmap, N):
     # Return colormap object.
     return matplotlib.colors.LinearSegmentedColormap(cmap.name + "_%d"%N, cdict, 1024)
 
-def refine_axis(ax, title, xticklabels, plot_params):
+
+def refine_axis(title, xticklabels, plot_params, ax):
     xticks = ax.get_xticks()
     #  or len(xticklabels) > 40
     if len(xticks) >= 40:
-        if type(xticklabels) is pd.MultiIndex:
+        if isinstance(xticklabels, pd.MultiIndex):
             xticklabels = xticklabels.get_level_values('time')
 
         if xticklabels[-1] - xticklabels[0] < 500:
@@ -64,22 +65,20 @@ def refine_axis(ax, title, xticklabels, plot_params):
         ax.set_ylim(plot_params['ylim']) # limitation on y-axis
 
 
-def heatmap_significant(ax, pv_data, sig_limit=0.05):
+def heatmap_significant(pv_data, sig_limit=0.05, ax=None):
     from matplotlib.patches import Rectangle
 
-    significance = [(col_index[1], row_index[0])
+    significance = [(col_index, row_index[0])
                     for row_index, row in pv_data.iterrows() for col_index, cell in row.iteritems()
                     if cell < sig_limit]
-    # print(significance)
+                    
     for x, y in significance:
         ax.add_patch(Rectangle((pv_data.columns.get_level_values('time').max() - x, 
                                 pv_data.index.get_level_values('freq').max() - y), 
                                 2, 1, alpha=0.5))
 
 
-
-
-def significant(ax, pv_data, win, sig_limit=0.05): 
+def significant(pv_data, win, sig_limit=0.05, ax=None):
     win = int(win[:-2])
     xmin, xmax, ymin, ymax = ax.axis()
 
@@ -88,7 +87,7 @@ def significant(ax, pv_data, win, sig_limit=0.05):
     for limit,alpha in zip([sig_limit,0.05,0.01,0.001],[0.1,0.2,0.3,0.4]):
         for tp,pv_df in pv_data.items():
             # ugly code
-            if type(tp) is tuple:
+            if isinstance(tp, tuple):
                 tp = tp[1]
 
             pv = pv_df.values[0]
@@ -117,7 +116,11 @@ def significant(ax, pv_data, win, sig_limit=0.05):
     cbar_ax.set_title('pvalue')
     cbar_ax.set_yticklabels(['<0.05', '<0.01', '<0.001'])
 
-def plot_waveform(ax, data, plot_params):
+def plot_waveform(data, plot_params={'err_style':'ci_band', 'color':"Set1"}, ax=None):
+    if ax is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+
     flat_data = pd.DataFrame(data.stack('time'))
     # flat_data.reset_index(level=['condition_group','time'], inplace=True)
     flat_data.reset_index(level=flat_data.index.names, inplace=True)
@@ -149,10 +152,15 @@ def plot_waveform(ax, data, plot_params):
 
     xticklabels = flat_data.columns
 
-    refine_axis(ax, data.name, xticklabels, plot_params)
+    refine_axis(data.name, xticklabels, plot_params, ax)
 
-def plot_spectrum(ax, data, plot_params):
+def plot_spectrum(data, plot_params={'err_style':'ci_band', 'color':"Set1"}, ax=None):
+    if ax is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+
     flat_data = data.stack('frequency')
+    flat_data = pd.DataFrame(flat_data, columns=['power'])
     flat_data.reset_index(level=['condition_group','channel_group','subject','frequency'], inplace=True)
     flat_data['condition_group'] = flat_data['condition_group'].apply(lambda x: ' '.join(x.split(' ')[1:]))
     flat_data['channel_group'] = flat_data['channel_group'].apply(lambda x: ' '.join(x.split(' ')[1:]))
@@ -164,15 +172,20 @@ def plot_spectrum(ax, data, plot_params):
         group = "condition_group"
         legend = True
 
-    sns.tsplot(time="frequency", value=0, unit="subject", condition=group, 
+    sns.tsplot(time="frequency", value='power', unit="subject", condition=group,
         data=flat_data, ax=ax, 
         err_style=plot_params['err_style'], legend=legend, color=plot_params['color'])
 
     xticklabels = flat_data.columns
 
-    refine_axis(ax, data.name, xticklabels, plot_params)
+    refine_axis(data.name, xticklabels, plot_params, ax)
 
-def plot_heatmap(ax, data, plot_params):
+
+def plot_heatmap(data, plot_params={'grid':True,'color': sns.cubehelix_palette(light=1, as_cmap=True)}, ax=None):
+    if ax is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+
     cbar_ax = ax.get_figure().add_axes([0.95,0.4,0.01,0.2]) # [left, bottom, width, height]
     name = data.name
     if 're_assign' in plot_params:
@@ -202,7 +215,7 @@ def plot_heatmap(ax, data, plot_params):
 
     xticklabels = data.columns
 
-    refine_axis(ax, data.name, xticklabels, plot_params)
+    refine_axis(data.name, xticklabels, plot_params, ax)
 
     if len(xticklabels)<40:
         ax.set_aspect(1) # ratio between y_unit and x_unit
@@ -232,10 +245,13 @@ def get_topograph(data, locations, channels, N):
 
     return scipy.interpolate.griddata(locs, np.append(data, [0,0,0,0]), (xi, yi), method='cubic')
 
-def plot_topograph(ax, data, plot_params):
-    amp_data = pd.DataFrame(data['Amp'])
+def plot_topograph(amp_data, pvalue_data, plot_params={'color': plt.cm.jet}, ax=None):
+    if ax is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
 
-    channel_index = data['Amp'].index.get_level_values('channel')
+    amp_data = pd.DataFrame(amp_data,columns = ['Amp'])
+    channel_index = amp_data.index.get_level_values('channel')
 
     amp_data['y_locs'] = [plot_params['chan_locs'][ch][0] for ch in channel_index]
     amp_data['x_locs'] = [plot_params['chan_locs'][ch][1] for ch in channel_index]
@@ -249,7 +265,8 @@ def plot_topograph(ax, data, plot_params):
     corners = pd.DataFrame([[0,left,bottom], [0,right,bottom], [0,left,top], [0,right,top]],columns=['Amp','x_locs','y_locs'])
     amp_data = amp_data.append(corners)
 
-    x,y,z = amp_data['y_locs']-left, amp_data['x_locs']-bottom, amp_data['Amp']
+    x, y, z = amp_data['y_locs'] - \
+        left, amp_data['x_locs']-bottom, amp_data['Amp']
 
     xi = np.linspace(0,right-left, N)
     yi = np.linspace(0,top-bottom, N)
@@ -305,14 +322,13 @@ def plot_topograph(ax, data, plot_params):
     ax.scatter(x[:-4], y[:-4], marker = 'o', c = 'b', alpha = 0.5, s = 2, zorder = 3)  
 
     # draw significant channel as white point
-    if 'p_val' in data.columns:
-        pval_data = pd.DataFrame(data['p_val'])
-        channel_index = data['p_val'].index.get_level_values('channel')
-        pval_data['y_locs'] = [plot_params['chan_locs'][ch][0] for ch in channel_index]
-        pval_data['x_locs'] = [plot_params['chan_locs'][ch][1] for ch in channel_index]
+    if isinstance(pvalue_data, pd.Series):
+        pvalue_data = pd.DataFrame(pvalue_data, columns=['pval'])
+        pvalue_data['y_locs'] = amp_data['y_locs']
+        pvalue_data['x_locs'] = amp_data['x_locs']
 
-        for ind,i in pval_data.iterrows():
-            if i.p_val<plot_params['sig_limit']:
+        for ind, i in pvalue_data.iterrows():
+            if i.pval < plot_params['sig_limit']:
                 ax.scatter(i.y_locs-bottom, i.x_locs-left,  c = 'w', s = 25, alpha=1, zorder = 3, linewidths=0.5, edgecolors='b')
 
     # remove the axis

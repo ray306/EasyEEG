@@ -8,22 +8,23 @@ def from_mne_epochs(subj_datas,subjIDs=[],montage_path='standard-10-5-cap385'):
     Parameters:
         subj_datas: mne.epochs.Epochs or list of mne.epochs.Epochs,
     '''
-    if type(subj_datas) == mne.epochs.Epochs:
+    if isinstance(subj_datas, mne.epochs.Epochs):
         subj_datas = [subj_datas]
 
     if subjIDs == []:
         subjIDs = [i+1 for i in range(len(subj_datas))]
 
+    trial_num_for_subjects = dict((s,0) for s in subjIDs)
     epochs_data = []
     # load each subject's eeg data respectively 
     for subjID,epoch_raw in zip(subjIDs,subj_datas): 
-        
         sr = epoch_raw.info['sfreq']
         channel_names = epoch_raw.info['ch_names']
 
         epochs_data_each_subj = epoch_raw.to_data_frame().stack('signal').unstack('time')
+        index_new = [(subjID, condition, trial_num_for_subjects[subjID] + trial, channel) for condition, trial, channel in epochs_data_each_subj.index.tolist()]
+        trial_num_for_subjects[subjID] = max([trial for subjID, condition, trial, channel in index_new])
 
-        index_new = [(subjID,condition,trial,channel) for condition,trial,channel in epochs_data_each_subj.index.tolist()]
         epochs_data_each_subj.index = pd.MultiIndex.from_tuples(index_new, names=['subject','condition','trial','channel'])
 
         # td = pd.to_timedelta(epochs_data_each_subj.columns,unit='ms')
@@ -60,7 +61,7 @@ def load_epochs(files=[],path='',subjIDs=[],montage_path='standard-10-5-cap385',
         raise ValueError('Only supported pickle files (".pickle"), HDF5 files (".h5"), MNE epochs files(".fif"), or EEGLAB files (".mat")')
 
 def infer_paths(files, path):
-    if type(files)==str:
+    if isinstance(files, str):
         files = [files]
     
     if len(files)==0:
@@ -86,7 +87,7 @@ def load_dataframe_pickle(files=[],path='',subjIDs=[],montage_path='standard-10-
     for filepath in filepaths:
         try:
             df = pd.read_pickle(filepath)
-            if type(df) is pd.DataFrame:
+            if isinstance(df, pd.DataFrame):
                 if compress:
                     conditions_list = list(df.index.get_level_values('condition').unique())
                     df_averaged = df.mean(level=list(np.setdiff1d(df.index.names, ['trial'])))
@@ -114,7 +115,7 @@ def load_dataframe_pickle(files=[],path='',subjIDs=[],montage_path='standard-10-
 
 def load_dataframe_hdf5(files=[],path='',subjIDs=[],montage_path='standard-10-5-cap385',compress=False):
     def preprocess(df):
-        if type(df) is pd.DataFrame:
+        if isinstance(df, pd.DataFrame):
             if compress:
                 conditions_list = list(df.index.get_level_values('condition').unique())
                 df_averaged = df.mean(level=list(np.setdiff1d(df.index.names, ['trial'])))
@@ -165,7 +166,7 @@ def load_dataframe_hdf5(files=[],path='',subjIDs=[],montage_path='standard-10-5-
 
 def load_dataframe_hdf5(files=[],path='',subjIDs=[],montage_path='standard-10-5-cap385',compress=False):
     def preprocess(df):
-        if type(df) is pd.DataFrame:
+        if isinstance(df, pd.DataFrame):
             if compress:
                 conditions_list = list(df.index.get_level_values('condition').unique())
                 df_averaged = df.mean(level=list(np.setdiff1d(df.index.names, ['trial'])))
@@ -219,7 +220,7 @@ def load_mne_fif(files=[],path='',subjIDs=[],montage_path='standard-10-5-cap385'
     '''
     filepaths = infer_paths(files, path)
 
-    if type(filepaths[0]) is str:
+    if isinstance(filepaths[0], str):
         subj_datas = [mne.read_epochs(path) for path in filepaths]
     else:
         raise ValueError('Parameter [files] should be path(s)')
@@ -336,17 +337,18 @@ def load_eeglab_mat(files=[],path='',subjIDs=[],montage_path='standard-10-5-cap3
 
     return Epochs(epochs_data, montage_path=montage_path, info={'sample_rate':sr})
 
-def load_raw_eeg(files=[],path='',subjIDs=[],montage_path='standard-10-5-cap385',events_dict=dict(),default_reference_channels='Cz',drop_channels=[],filter_range=(0.1, 30.),ref_channels='average',epoch_range=(-0.2, 1) ,reject=None):
+
+def load_raw_eeg(files=[], path='', subjIDs=[], montage_path='standard-10-5-cap385', events_dict=dict(), default_reference_channels='Cz', drop_channels=[], filter_range=(0.1, 30.), ref_channels='average', epoch_range=(-0.2, 1), samplerate=500, reject=None):
     filepaths = infer_paths(files, path)
 
-    if type(events_dict) is list:
-            events_dict = {k:k for k in events_dict}
+    if isinstance(events_dict, list):
+            events_dict = {k:ind+1 for ind,k in enumerate(events_dict)}
 
     if subjIDs == []:
         subjIDs = [i+1 for i in range(len(filepaths))]
 
     epochs_data = []
-    # load each subject's eeg data respectively 
+    # load each subject's eeg data
     for filepath in filepaths:
         print(filepath)
         if  filepath[-4:] in ['.edf','.bdf','gdf']:
@@ -371,8 +373,11 @@ def load_raw_eeg(files=[],path='',subjIDs=[],montage_path='standard-10-5-cap385'
 
         EEG.set_eeg_reference(ref_channels=ref_channels)  # set EEG average reference
         EEG.apply_proj() # Average reference projection was added, but hasn't been applied yet. Use the .apply_proj() method function to apply projections.
+        
+        EEG.resample(samplerate)
 
         epoch = mne.Epochs(EEG, EEG._events, events_dict, epoch_range[0], epoch_range[1], baseline=(epoch_range[0], 0), preload=True, reject=reject)
+        
         epochs_data.append(epoch)
 
     epochs_data = from_mne_epochs(epochs_data,subjIDs=subjIDs,montage_path=montage_path)

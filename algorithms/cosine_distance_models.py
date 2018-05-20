@@ -6,7 +6,7 @@ from ..statistics import stats_methods
 from scipy.spatial.distance import cosine # 1-cosD
 
 def calc_cosD(df): # df: channel,subject,condition_group
-    cond_A, cond_B = [average(conditon_group_data, keep='channel').mean(axis=1) 
+    cond_A, cond_B = [average(conditon_group_data, keep='channel')
         for conditon_group_id,conditon_group_data in df.groupby(level='condition_group')]
     return cosine(cond_A, cond_B)
 
@@ -25,18 +25,21 @@ def tanova(self,step_size='1ms',win_size='1ms',sample='mean',shuffle=500,strateg
     @self.iter('all')
     def to_tanova1(case_raw_data):
         case_raw_data = sampling(case_raw_data, step_size, win_size, sample)
+        case_raw_data.columns = case_raw_data.columns.get_level_values(1)  # remvoe "time_group"
         check_availability(case_raw_data, 'condition_group', '==2')
         return roll_on_levels(case_raw_data, sub_func, arguments_dict=dict(shuffle=shuffle, within_subject=False), levels='time', prograssbar=True, parallel=parallel)
 
     @self.iter('all')
     def to_tanova2(case_raw_data):
         case_raw_data = sampling(case_raw_data, step_size, win_size, sample)
+        case_raw_data.columns = case_raw_data.columns.get_level_values(1)  # remvoe "time_group"
         check_availability(case_raw_data, 'condition_group', '==2')
         return roll_on_levels(case_raw_data, sub_func, arguments_dict=dict(shuffle=shuffle, within_subject=True), levels='time', prograssbar=True, parallel=parallel)
 
     @self.iter('average')
     def to_tanova3(case_raw_data):
         case_raw_data = sampling(case_raw_data, step_size, win_size, sample)
+        case_raw_data.columns = case_raw_data.columns.get_level_values(1)  # remvoe "time_group"
         check_availability(case_raw_data, 'condition_group', '==2')
         return roll_on_levels(case_raw_data, sub_func, arguments_dict=dict(shuffle=shuffle, within_subject=True), levels='time', prograssbar=True, parallel=parallel)
 
@@ -47,9 +50,7 @@ def tanova(self,step_size='1ms',win_size='1ms',sample='mean',shuffle=500,strateg
     elif strategy==3:
         tanova_collection, annotation_collection = to_tanova3()
 
-    default_plot_params = dict(title='TANOVA',plot_type=['direct','heatmap'], x_len=12, re_assign=[(0,0.01,0.05,0.1,1),(4,3,2,1)],
-                                color=sns.cubehelix_palette(light=1, as_cmap=True), grid=True,
-                                x_title='time', y_title='condition_group',cbar_title='pvalue',cbar_values=['>0.1','<0.1','<0.05','<0.01'])
+    default_plot_params = dict(title='TANOVA',plot_type=['direct','heatmap'], x_len=12, re_assign=[(0,0.01,0.05,0.1,1),(4,3,2,1)], color=sns.cubehelix_palette(light=1, as_cmap=True), grid=True, x_title='time', y_title='condition_group',cbar_title='pvalue',cbar_values=['>0.1','<0.1','<0.05','<0.01'])
 
     return structure.Analyzed_data('TANOVA', tanova_collection, annotation_collection, default_plot_params=default_plot_params)
 

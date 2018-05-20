@@ -4,7 +4,7 @@ from . import group
 
 class Epochs():
     def __init__(self, epochs_data, montage_path='standard-10-5-cap385', info=dict()):
-        if type(epochs_data) != pd.DataFrame:
+        if not isinstance(epochs_data, pd.DataFrame):
             raise Exception('Unsupported input!')
 
         if 'sample_rate' not in info:
@@ -52,17 +52,17 @@ class Epochs():
         self.average = epochs_data_averaged
         self.info = info
 
-    def extract(self, collection_script):
-        collection_frame = group.parsing(collection_script, self)    
-        return Extracted_epochs(self, collection_frame)
+    def extract(self, batch_script):
+        batch_frame = group.parsing(batch_script, self)    
+        return Extracted_epochs(self, batch_frame)
 
     def save(self, filepath, append=False):
         io.save_epochs(self, filepath, append=False, all_in_one=False)
 
 class Extracted_epochs():
-    def __init__(self, epochs, collection_frame):
+    def __init__(self, epochs, batch_frame):
         self.data = epochs
-        self.frame = collection_frame
+        self.frame = batch_frame
         self.info = epochs.info
 
     def iter_batchs(self):
@@ -73,18 +73,11 @@ class Extracted_epochs():
         for case_frame in batch_frame:
             yield case_frame
 
-    def get_batch_names(self, batch_id='all'):
-        batch_names = [batch_name for batch_name,batch_frame in self.frame]
+    def get_batch_name(self):
+        return self.frame.name
 
-        if batch_id == 'all':
-            return batch_names
-        elif type(batch_id) is list:
-            return [batch_names[idx] for idx in batch_id]
-        elif type(batch_id) is int:
-            return batch_names[batch_id]
-
-    def get_case_name(self, batch_id=0, case_id=0):
-        batch_name, batch_frame = self.frame[batch_id]
+    def get_case_name(self, case_id=0):
+        batch_name, batch_frame = self.frame
         case_frame = batch_frame[case_id]
 
         case_frame_dict = dict()
@@ -93,8 +86,8 @@ class Extracted_epochs():
 
         return case_frame_dict
 
-    def get_dataframe(self, batch_id=0, case_id=0, average=True, to_print=False):
-        batch_name, batch_frame = self.frame[batch_id]
+    def get_dataframe(self, case_id=0, average=True, to_print=False):
+        batch_name, batch_frame = self.frame
         case_frame = batch_frame[case_id]
 
         if average:
@@ -108,83 +101,78 @@ class Extracted_epochs():
             print(f'case_name: {result.name}')
         return result
 
-    def get_array(self, batch_id=0, case_id=0, average=True, to_print=False):
-        df = self.dataframe(batch_id, case_id, average, to_print)
+    def get_array(self, case_id=0, average=True, to_print=False):
+        df = self.get_dataframe(case_id, average, to_print)
         return df.as_matrix()
 
-    def get_index(self, batch_id=0, case_id=0, average=True, to_print=False):
-        df = self.dataframe(batch_id, case_id, average, to_print)
+    def get_index(self, case_id=0, average=True, to_print=False):
+        df = self.get_dataframe(case_id, average, to_print)
         return df.index, df.columns
 
     def get_info(self, key):
         return self.info[key]
 
-    def iter(self, mode='average'): # iterate the collection and the corresponding batchs, and apply the analyzing function
+    def iter(self, mode='average'): # iterate the batch and the corresponding batchs, and apply the analyzing function
         def decorator(func):
             def wrapper(*args, **kw):
                 data_to_extracted = getattr(self.data, mode) # e.g. self.data.average
-     
-                analyzed_collection = []
-                for batch_name,batch_frame in self.frame:
-                    analyzed_batch = []
-                    all_case_names = []
 
-                    for case_frame in batch_frame:
-                        case_data = group.generate_case_data(case_frame, data_to_extracted)
-                        all_case_names.append(case_data.name)
-                        result = func(case_data, *args, **kw)
+                batch_name, batch_frame = self.frame
+                analyzed_batch = []
+                all_case_names = []
 
-                        if type(result) is tuple: # if return value is not single
-                            analyzed_batch.append(result)
-                        else:
-                            analyzed_batch.append(tuple([result]))
+                for case_frame in batch_frame:
+                    case_data = group.generate_case_data(case_frame, data_to_extracted)
 
-                    all_case_names = np.array(all_case_names)
-                    name = ''
-                    for ind,i in enumerate(['subjects','conditions','trials','channels','timepoints']):
-                        values = list(np.unique(all_case_names[:,ind]))
-                        if values != ['All'] and set(values) != set(self.info[i]['all']):
-                            name += ','.join(values) + ' '
+                    all_case_names.append(case_data.name)
+                    result = func(case_data, *args, **kw)
 
-                    analyzed_batch_dfs = [] 
-                    
-                    # deal with the multiple return value(s) in the 'func', 
-                    # 'len(analyzed_batch[0])' refers to the number of return value(s)
-                    for i in range(len(analyzed_batch[0])):
+                    if isinstance(result, tuple): # if return value is not single
+                        analyzed_batch.append(result)
+                    else:
+                        analyzed_batch.append(tuple([result]))
+
+                all_case_names = np.array(all_case_names)
+                name = ''
+                for ind,i in enumerate(['subjects','conditions','trials','channels','timepoints']):
+                    values = list(np.unique(all_case_names[:,ind]))
+                    if values != ['All'] and set(values) != set(self.info[i]['all']):
+                        name += ','.join(values) + ' '
+
+                analyzed_batch_dfs = [] 
+                # deal with the multiple return value(s) in the 'func', 
+                # 'len(analyzed_batch[0])' refers to the number of return value(s)
+                for i in range(len(analyzed_batch[0])):
+                    if analyzed_batch[0][i] is None:
+                        analyzed_batch_dfs.append(None)
+                    else:
                         analyzed_batch_df = pd.concat([result[i] for result in analyzed_batch])
                         analyzed_batch_df.name = name
                         analyzed_batch_dfs.append(analyzed_batch_df)
 
-                    analyzed_collection.append(analyzed_batch_dfs)
+                analyzed_batch = analyzed_batch_dfs
 
-                if len(analyzed_collection[0]) > 1:
-                    return tuple([data[i] for data in analyzed_collection] for i in range(len(analyzed_collection[0])))
+                if len(analyzed_batch) > 1:
+                    return tuple(analyzed_batch[i] for i in range(len(analyzed_batch)))
                 else:
-                    return [data[0] for data in analyzed_collection]
+                    return analyzed_batch[0]
 
             return wrapper
         return decorator
 
 class Analyzed_data():
     def __init__(self, analysis_name, data, annotation=None, default_plot_params=dict()):
-        for i in data:
-            if 'time_group' in i.columns.names and len(i.columns.get_level_values('time_group').unique()) == 1:
-                i.columns = i.columns.get_level_values('time')
+        if 'time_group' in data.columns.names and len(data.columns.get_level_values('time_group').unique()) == 1:
+            data.columns = data.columns.get_level_values('time')
 
         self.analysis_name = analysis_name
         self.data = data
-
-        if annotation:
-            self.annotation = annotation
-        else:
-            self.annotation = [None] * len(data)
+        self.annotation = annotation
         self.default_plot_params = default_plot_params
 
     def __repr__(self):
-        print('Name: ',self.analysis_name,'\n')
-        for ind,i in enumerate(self.data):
-            print(f'Head lines in data {ind}:')
-            print(i.head())
+        print('Name: ', self.analysis_name, '\n', 'Head lines:')
+        print(self.data.head())
         return ''
 
     def correct(self, on_annotation=False, method='fdr_bh'):

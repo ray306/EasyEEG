@@ -34,9 +34,9 @@ def clustering(self, n_clusters):
     def to_erp(case_raw_data):
         return case_raw_data.mean(level=['condition_group','channel']).stack('time').unstack('channel')
 
-    erp_collection = to_erp()
+    erp_batch = to_erp()
 
-    clustering_data = [kmeans(erp_batch) for erp_batch in erp_collection]
+    clustering_data = kmeans(erp_batch)
 
     default_plot_params = dict(plot_type=['direct','heatmap'], color=sns.cubehelix_palette(light=0.95,as_cmap=True), cbar_values=list(range(1,n_clusters+1)),cbar_title='clusters',
         grid=True, style='darkgrid')

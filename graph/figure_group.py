@@ -13,7 +13,7 @@ def plot(self, plot_params=None, save=False, return_fig=False):
     else:
         plot_params = self.default_plot_params
     # if 'color' in plot_params:
-    #     if type(plot_params['color']) is str:
+    #     if isinstance(plot_params['color'], str):
     #         plot_params['color'] = sns.color_palette(plot_params['color'])
     #     else:
     #         plot_params['color'] = plot_params['color']
@@ -26,56 +26,51 @@ def plot(self, plot_params=None, save=False, return_fig=False):
         fig_x = 8
 
     'preparing the canvas'
-    
-    fig_collection = []
-    for idx in range(len(self.data)):
-        fig = plt.figure(figsize=(fig_x,5))
-        if plot_params['plot_type'][0] == 'direct':
-            ax = fig.add_subplot(111)
-            select_subplot_type(plot_params['plot_type'][1], ax, self.data[idx], self.annotation[idx], plot_params)
-        elif plot_params['plot_type'][0] == 'matrix':
-            matrix_plot(fig, self.data[idx], self.annotation[idx], 
-                plot_params['x_title'],plot_params['y_title'],plot_params)
-        elif plot_params['plot_type'][0] == 'float':
-            float_plot(fig, self.data[idx], self.annotation[idx], 
-                plot_params['xy_locs'], plot_params)
-        else:
-            raise Exception(f'Unsupported plot_type {plot_params["plot_type"][0]}')  
+    fig = plt.figure(figsize=(fig_x,5))
+    if plot_params['plot_type'][0] == 'direct':
+        ax = fig.add_subplot(111)
+        select_subplot_type(plot_params['plot_type'][1], ax, self.data, self.annotation, plot_params)
+    elif plot_params['plot_type'][0] == 'matrix':
+        matrix_plot(fig, self.data, self.annotation, 
+            plot_params['x_title'],plot_params['y_title'],plot_params)
+    elif plot_params['plot_type'][0] == 'float':
+        float_plot(fig, self.data, self.annotation, 
+            plot_params['xy_locs'], plot_params)
+    else:
+        raise Exception(f'Unsupported plot_type {plot_params["plot_type"][0]}')  
 
-        'output'
-        # ipdb.set_trace()
-        plt.show()
-        if save:
-            title = f'{title}.png'
-            if type(save) == str:
-                title = save
-            fig.savefig(title, transparent=True)
-        fig_collection.append(fig)
+    'output'
+    plt.show()
+    if save:
+        title = f'{title}.png'
+        if isinstance(save, str):
+            title = save
+        fig.savefig(title, transparent=True)
 
     'reset'
     sns.despine()
     sns.set()
     
     if return_fig:
-        return fig_collection
+        return fig
 
 structure.Analyzed_data.plot = plot
 
 def select_subplot_type(subplot_type, ax, data, annotation, plot_params):
     if subplot_type == 'waveform':
-        figure_unit.plot_waveform(ax, data, plot_params)
+        figure_unit.plot_waveform(data, plot_params, ax)
         if 'compare' in plot_params and plot_params['compare']==True:
-            figure_unit.significant(ax, annotation, plot_params['win'], plot_params['sig_limit'])
+            figure_unit.significant(annotation, plot_params['win'], plot_params['sig_limit'], ax)
     elif subplot_type == 'spectrum':
-        figure_unit.plot_spectrum(ax, data, plot_params)
+        figure_unit.plot_spectrum(data, plot_params, ax)
         if 'compare' in plot_params and plot_params['compare']==True:
-            figure_unit.significant(ax, annotation, plot_params['win'], plot_params['sig_limit'])
+            figure_unit.significant(annotation, plot_params['win'], plot_params['sig_limit'], ax)
     elif subplot_type == 'topograph':
-        figure_unit.plot_topograph(ax, data, plot_params)
+        figure_unit.plot_topograph(data, annotation, plot_params, ax)
     elif subplot_type == 'heatmap':
-        figure_unit.plot_heatmap(ax, data, plot_params)
+        figure_unit.plot_heatmap(data, plot_params, ax)
         if 'compare' in plot_params and plot_params['compare']==True:
-            figure_unit.heatmap_significant(ax, annotation, plot_params['sig_limit'])
+            figure_unit.heatmap_significant(annotation, plot_params['sig_limit'], ax)
     else:
         raise Exception(f'Unsupported subplot_type "{subplot_type}"')
 
@@ -84,7 +79,7 @@ def float_plot(fig, data, annotation, positions, plot_params):
 
     data_cells = dict((k[2:],v) for k,v in data.groupby(level='channel_group'))
 
-    if type(annotation) == pd.DataFrame:
+    if isinstance(annotation, pd.DataFrame):
         annotation_cells = dict((k[2:],v) for k,v in annotation.groupby(level='channel_group'))
     
     axs = []
@@ -97,7 +92,7 @@ def float_plot(fig, data, annotation, positions, plot_params):
 
         axs.append(fig.add_axes([idx,0,0,0]))
 
-        if type(annotation) == pd.DataFrame:
+        if isinstance(annotation, pd.DataFrame):
             select_subplot_type(plot_params['plot_type'][1], axs[idx], data, annotation_cells[data_name], plot_params)
         else:
             select_subplot_type(plot_params['plot_type'][1], axs[idx], data, None, plot_params)
@@ -109,22 +104,33 @@ def float_plot(fig, data, annotation, positions, plot_params):
     sns.set() # switch to seaborn defaults
 
 def matrix_plot(fig, data, annotation, x_axis, y_axis, plot_params):
-    sns.set_style("white")
+    def pre(target):
+        target = target.stack('time')
 
-    data = data.stack('time')
+        for level_name in target.index.names:
+            if '_group' in level_name:
+                old_values_in_level = target.index.levels[target.index.names.index(level_name)]
+                target.index = target.index.set_levels([' '.join(i.split(' ')[1:]) for i in old_values_in_level],level=level_name)
+    
+        'add "ms" to time axis'
+        old_values_in_level = target.index.levels[target.index.names.index('time')]
+        target.index = target.index.set_levels([f'{i}ms' for i in old_values_in_level],level='time')
+        return target
 
-    for level_name in data.index.names:
-        if '_group' in level_name:
-            old_values_in_level = data.index.levels[data.index.names.index(level_name)]
-            data.index = data.index.set_levels([' '.join(i.split(' ')[1:]) for i in old_values_in_level],level=level_name)
-    'add "ms" to time axis'
-    old_values_in_level = data.index.levels[data.index.names.index('time')]
-    data.index = data.index.set_levels([f'{i}ms' for i in old_values_in_level],level='time')
+    data = pre(data)
+    data_cells = dict((k, v) for k, v in data.groupby(level=[y_axis, x_axis]))
+    if not annotation is None:
+        annotation = pre(annotation)
+        annotation_cells = dict((k, v) for k, v in annotation.groupby(level=[y_axis, x_axis]))
+    else:
+        annotation_cells = dict((k, None) for k in data_cells.keys())
 
     x_axis_values = list(OrderedDict.fromkeys(data.index.get_level_values(x_axis))) # remove duplicates from a list in whilst preserving order
     y_axis_values = list(OrderedDict.fromkeys(data.index.get_level_values(y_axis))) # remove duplicates from a list in whilst preserving order
 
     col_N,row_N = len(x_axis_values), len(y_axis_values)
+
+    sns.set_style("white")
     fig.set_figwidth(15)
 
     W,H = 1,1
@@ -168,11 +174,12 @@ def matrix_plot(fig, data, annotation, x_axis, y_axis, plot_params):
 
     'data'
     inner_grids_for_data = gridspec.GridSpecFromSubplotSpec(row_N, col_N, inner_grids[7])
-    data_cells = dict((k,v) for k,v in data.groupby(level=[y_axis,x_axis]))
+    
     for idx,data_name in enumerate(itertools.product(y_axis_values,x_axis_values)):
         ax = plt.Subplot(fig, inner_grids_for_data[idx])
         fig.add_subplot(ax)
-        select_subplot_type(plot_params['plot_type'][1], ax, data_cells[data_name], annotation, plot_params)
+        select_subplot_type(plot_params['plot_type'][1], ax,
+                            data_cells[data_name], annotation_cells[data_name], plot_params)
 
     'color_bar'
     inner_grids_for_cbar = gridspec.GridSpecFromSubplotSpec(row_N, 1, inner_grids[8], wspace=wspace, hspace=hspace)
