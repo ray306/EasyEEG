@@ -171,8 +171,14 @@ class Analyzed_data():
         self.default_plot_params = default_plot_params
 
     def __repr__(self):
-        print('Name: ', self.analysis_name, '\n', 'Head lines:')
+        print('Name: ', self.analysis_name)
+        print()
+        print('**Samples in Data:')
         print(self.data.head())
+        print()
+        if isinstance(self.annotation, pd.DataFrame):
+            print('**Samples in Annotation:')
+            print(self.annotation.head())
         return ''
 
     def correct(self, on_annotation=False, method='fdr_bh'):

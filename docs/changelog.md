@@ -9,6 +9,14 @@
 - (todo) classification across timepints and across trials
 - (todo) roll_on_level on time and time_group
 
+# 0.8.3.2
+- Changed the Y-axis title to `power` for `Spectrum`
+- Changed the printing format of `AnalyzeData`
+
+# 0.8.3.1
+- Fixed a issuein `multiple_comparison_correction`
+- Fixed a issue of loading `AnalyzeData`
+
 # 0.8.3
 - Removed `collection` from the hierarchical Extracted_epochs. Now there are only`case` and `batch`
 - New method `subtract(raw, between, align)`

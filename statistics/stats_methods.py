@@ -1,6 +1,6 @@
 from ..default import *
 
-def multiple_comparison_correction(pvs_list, method='fdr_bh'):
+def multiple_comparison_correction(pvs, method='fdr_bh'):
     if method == 'cluster':
         def correct(v):
             level = 0.05
@@ -12,12 +12,10 @@ def multiple_comparison_correction(pvs_list, method='fdr_bh'):
     else:
         correct = lambda v: statsmodels.sandbox.stats.multicomp.multipletests(v, 0.05, method)[1]
     
-    pvs_list_new = []
-    for pvs in pvs_list:
-        pvs_list_new.append(pd.DataFrame([correct(i) for i in pvs.values], index=pvs.index, columns=pvs.columns))
-        pvs_list_new[-1].name = pvs.name
+    pvs_new = pd.DataFrame([correct(i) for i in pvs.values], index=pvs.index, columns=pvs.columns)
+    pvs_new.name = pvs.name
         
-    return pvs_list_new
+    return pvs_new
 
 def t_test(values):
     a,b = values

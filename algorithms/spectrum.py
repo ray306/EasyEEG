@@ -44,7 +44,7 @@ def Spectrum(self, compare=False, freq_span=(0,30), target='power', comparison_p
     else:
         stats_data = None
 
-    default_plot_params = dict(plot_type=['direct', 'spectrum'], y_title='Spectrum', err_style='ci_band',
+    default_plot_params = dict(plot_type=['direct', 'spectrum'], y_title='power', err_style='ci_band',
                                color="Set1", style='darkgrid', compare=compare, win=comparison_params['win'], sig_limit=0.05)
     return structure.Analyzed_data('Spectrum', spetrum_batch, stats_data, default_plot_params)
 

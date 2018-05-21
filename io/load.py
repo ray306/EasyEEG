@@ -392,13 +392,9 @@ def load_AnalyzedData(filepath):
         data = pickle.load(f)
         annotation = pickle.load(f)
         default_plot_params = pickle.load(f)
-        data_names = pickle.load(f)
-        annotation_names = pickle.load(f)
-
-        for idx,i in enumerate(data_names):
-            data[idx].name = i
-        for idx,i in enumerate(annotation_names):
-            annotation[idx].name = i
+        data.name = pickle.load(f)
+        if isinstance(annotation, pd.DataFrame):
+            annotation.name = pickle.load(f)
 
         return Analyzed_data(analysis_name, data, annotation, default_plot_params)
 
