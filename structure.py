@@ -161,7 +161,7 @@ class Extracted_epochs():
         return decorator
 
 class Analyzed_data():
-    def __init__(self, analysis_name, data, annotation=None, default_plot_params=dict()):
+    def __init__(self, analysis_name, data, annotation=None, supplement=None, default_plot_params=dict()):
         if 'time_group' in data.columns.names and len(data.columns.get_level_values('time_group').unique()) == 1:
             data.columns = data.columns.get_level_values('time')
 
@@ -169,6 +169,7 @@ class Analyzed_data():
         self.data = data
         self.annotation = annotation
         self.default_plot_params = default_plot_params
+        self.supplement = supplement
 
     def __repr__(self):
         print('Name: ', self.analysis_name)
@@ -184,9 +185,9 @@ class Analyzed_data():
     def correct(self, on_annotation=False, method='fdr_bh'):
         from .statistics.stats_methods import multiple_comparison_correction
         if on_annotation:
-            return Analyzed_data(self.analysis_name, self.data, multiple_comparison_correction(self.annotation, method=method), self.default_plot_params)
+            return Analyzed_data(self.analysis_name, self.data, multiple_comparison_correction(self.annotation, method=method), self.supplement, self.default_plot_params)
         else:
-            return Analyzed_data(self.analysis_name, multiple_comparison_correction(self.data, method=method), self.annotation, self.default_plot_params)
+            return Analyzed_data(self.analysis_name, multiple_comparison_correction(self.data, method=method), self.annotation, self.supplement, self.default_plot_params)
 
     def save(self, filepath):
         io.save_result(self, filepath)

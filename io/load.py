@@ -391,12 +391,14 @@ def load_AnalyzedData(filepath):
         analysis_name = pickle.load(f)
         data = pickle.load(f)
         annotation = pickle.load(f)
+        supplement = pickle.load(f)
         default_plot_params = pickle.load(f)
+
         data.name = pickle.load(f)
         if isinstance(annotation, pd.DataFrame):
             annotation.name = pickle.load(f)
 
-        return Analyzed_data(analysis_name, data, annotation, default_plot_params)
+        return Analyzed_data(analysis_name, data, annotation, supplement, default_plot_params)
 
 'copied a lot from MNE 0.14.1'
 def load_topolocs(f_path,ch_names):

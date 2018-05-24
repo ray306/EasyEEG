@@ -174,7 +174,11 @@ def data_to_df(data, index, index_levels):
         index = pd.Index(index, name=index_levels)
     else:
         index = pd.MultiIndex.from_tuples(index, names=index_levels)
-    return pd.DataFrame(data, index=index)
+
+    if isinstance(data[0], pd.DataFrame):
+        return pd.concat(data, keys=index)
+    else:    
+        return pd.DataFrame(data, index=index)
 
 from concurrent.futures import ProcessPoolExecutor
 def roll_on_levels(df, func, arguments_dict=dict(), levels='time', prograssbar=True, parallel=False, sequence_size=1):
@@ -184,9 +188,9 @@ def roll_on_levels(df, func, arguments_dict=dict(), levels='time', prograssbar=T
         col_level = df.columns.names[0]
 
     df = df.stack(col_level)
-    data_results = []
-    annotation_results = []
+    results = defaultdict(list)
     group_ids = []
+
     if sequence_size==1:
         groups_to_roll = df.groupby(level=levels)
     else:
@@ -199,14 +203,10 @@ def roll_on_levels(df, func, arguments_dict=dict(), levels='time', prograssbar=T
 
             group_ids.append(group_id)
             if isinstance(result_one_group, tuple):
-                if len(result_one_group)==2:
-                    data_results.append(result_one_group[0])
-                    annotation_results.append(result_one_group[1])
-                else:
-                    raise Exception('The return value of func should not above 2!')
+                for idx, res in enumerate(result_one_group):
+                    results[idx].append(result_one_group[idx])
             else:
-                
-                data_results.append(result_one_group)
+                results[0].append(result_one_group)
     else:
         if parallel is True: parallel = None # if max_workers is None or not given, it will default to the number of processors on the machine
         with ProcessPoolExecutor(max_workers=parallel) as executor:
@@ -225,30 +225,27 @@ def roll_on_levels(df, func, arguments_dict=dict(), levels='time', prograssbar=T
 
             group_ids.append(group_id)
             if isinstance(result_one_group, tuple):
-                if len(result_one_group)==2:
-                    data_results.append(result_one_group[0])
-                    annotation_results.append(result_one_group[1])
-                else:
-                    raise Exception('The return value of func should not above 2!')
+                for idx, res in enumerate(result_one_group):
+                    results[idx].append(result_one_group[idx])
             else:
-                data_results.append(result_one_group)
+                results[0].append(result_one_group)
+    
+    for key in results.keys():
+        "why 'condition_group' here"
+        results[key] = data_to_df(results[key], group_ids, levels)
+        recover_index(results[key], df, 'condition_group')
+        
+        results[key] = results[key].unstack(col_level)
+        results[key] = results[key].stack(0)
+        
+        if results[key].index.names[-1] is None:
+            results[key].index = results[key].index.droplevel(-1)
 
-    data_results = data_to_df(data_results, group_ids, levels)
-    "why 'condition_group' here"
-    recover_index(data_results, df, 'condition_group')
-    index = data_results.index
-    data_results = data_results.unstack(col_level)[0]
-
-    if len(annotation_results)==0:
-        return data_results
+    if len(results.keys()) == 1:
+        return results[0]
     else:
-        annotation_results = pd.DataFrame(annotation_results, index=index)
-        recover_index(annotation_results, df, 'condition_group')
-        annotation_results = annotation_results.unstack(col_level)
-        if isinstance(annotation_results.columns, pd.MultiIndex):
-            annotation_results.columns.names = ['subject', col_level]
-            annotation_results = annotation_results.stack('subject')
-        return data_results, annotation_results
+        return tuple(results.values())
+
 
 def roll_on_levels_and_compare(df, func, arguments_dict=dict(), levels='time', between='condition_group', in_group='subject',prograssbar=True):
     if len(df.columns.names)>1:

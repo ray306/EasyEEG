@@ -31,11 +31,11 @@ def plot(self, plot_params=None, save=False, return_fig=False):
         ax = fig.add_subplot(111)
         select_subplot_type(plot_params['plot_type'][1], ax, self.data, self.annotation, plot_params)
     elif plot_params['plot_type'][0] == 'matrix':
-        matrix_plot(fig, self.data, self.annotation, 
-            plot_params['x_title'],plot_params['y_title'],plot_params)
+        matrix_plot(self.data, plot_params['x_title'], plot_params['y_title'], 
+                    plot_params, self.annotation, fig)
     elif plot_params['plot_type'][0] == 'float':
-        float_plot(fig, self.data, self.annotation, 
-            plot_params['xy_locs'], plot_params)
+        float_plot(self.data, plot_params['xy_locs'], 
+                    plot_params, self.annotation, fig)
     else:
         raise Exception(f'Unsupported plot_type {plot_params["plot_type"][0]}')  
 
@@ -74,7 +74,14 @@ def select_subplot_type(subplot_type, ax, data, annotation, plot_params):
     else:
         raise Exception(f'Unsupported subplot_type "{subplot_type}"')
 
-def float_plot(fig, data, annotation, positions, plot_params):
+
+def float_plot(data, positions, plot_params, annotation=None, fig=None):
+    if fig is None:
+        fig = plt.figure(figsize=(8, 5))
+
+    if positions is 'channels':
+        positions = io.load_topolocs('standard-10-5-cap385', None)
+
     sns.set_style("white")
 
     data_cells = dict((k[2:],v) for k,v in data.groupby(level='channel_group'))
@@ -103,7 +110,7 @@ def float_plot(fig, data, annotation, positions, plot_params):
 
     sns.set() # switch to seaborn defaults
 
-def matrix_plot(fig, data, annotation, x_axis, y_axis, plot_params):
+def matrix_plot(data, x_axis, y_axis, plot_params, annotation=None, fig=None):
     def pre(target):
         target = target.stack('time')
 
@@ -116,6 +123,23 @@ def matrix_plot(fig, data, annotation, x_axis, y_axis, plot_params):
         old_values_in_level = target.index.levels[target.index.names.index('time')]
         target.index = target.index.set_levels([f'{i}ms' for i in old_values_in_level],level='time')
         return target
+
+    if fig is None:
+        fig = plt.figure(figsize=(8, 5))
+
+    if not 'title' in plot_params:
+        plot_params['title'] = ''
+
+    if plot_params['plot_type'][1] == 'topograph':
+        if not 'zlim' in plot_params:
+            plot_params['zlim'] = (data.min().min(), data.max().max())
+        if not 'cbar_title' in plot_params:
+            plot_params['cbar_title'] = ''
+        if not 'color' in plot_params:
+            plot_params['color'] = plt.cm.jet
+        if not 'chan_locs' in plot_params:
+            from .. import io
+            plot_params['chan_locs'] = io.load_topolocs('standard-10-5-cap385', None)
 
     data = pre(data)
     data_cells = dict((k, v) for k, v in data.groupby(level=[y_axis, x_axis]))
@@ -189,6 +213,7 @@ def matrix_plot(fig, data, annotation, x_axis, y_axis, plot_params):
                                     orientation='vertical')
     if 'cbar_title' in plot_params:
         ax.set_title(plot_params['cbar_title'])
+
     fig.add_subplot(ax)       
 
     sns.set() # switch to seaborn defaults

@@ -20,6 +20,7 @@ def reload(module=None):
         importlib.reload(algorithms)
         importlib.reload(algorithms.basic)
         importlib.reload(algorithms.stats_methods) 
+        importlib.reload(graph)
         importlib.reload(graph.figure_group) 
         importlib.reload(graph.figure_unit)
         if module != None:

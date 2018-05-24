@@ -40,4 +40,4 @@ def clustering(self, n_clusters):
 
     default_plot_params = dict(plot_type=['direct','heatmap'], color=sns.cubehelix_palette(light=0.95,as_cmap=True), cbar_values=list(range(1,n_clusters+1)),cbar_title='clusters',
         grid=True, style='darkgrid')
-    return structure.Analyzed_data('Clustering', clustering_data, None, default_plot_params)
+    return structure.Analyzed_data('Clustering', clustering_data, None, default_plot_params=default_plot_params)

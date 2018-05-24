@@ -3,60 +3,60 @@ import os
 
 path = '../'
 
-'quickstart_generator'
-with open(path+'docs/quickstart_template.txt') as f:
-    template = f.readlines()
+# 'quickstart_generator'
+# with open(path+'docs/quickstart_template.txt') as f:
+#     template = f.readlines()
 
-    new_file = []
-    for l in template:
-        if l[:2] != '& ':
-            new_file.append(l)
-        else:
-            try:
-                with open('../test/'+l[2:].replace('\n',''), encoding='utf8') as f:
-                    lines = f.readlines()
+#     new_file = []
+#     for l in template:
+#         if l[:2] != '& ':
+#             new_file.append(l)
+#         else:
+#             try:
+#                 with open('../test/'+l[2:].replace('\n',''), encoding='utf8') as f:
+#                     lines = f.readlines()
 
-                    for ind,l in enumerate(lines):
-                        if l[:18] == "from expy import *":
-                            break
+#                     for ind,l in enumerate(lines):
+#                         if l[:18] == "from expy import *":
+#                             break
 
-                    code = ''.join(lines[ind:])
+#                     code = ''.join(lines[ind:])
 
-                new_file.append('\n```python\n%s\n```\n' %(code))
-            except:
-                    print('cannnot read',file)
-
-
-    with open(path+'docs/quickstart.md','w+', encoding='utf8') as f:
-        f.writelines(new_file)
-
-'cookbook_generator'
-with open(path+'docs/cookbook_template.txt') as f:
-    template = f.readlines()
-
-    new_file = []
-    for l in template:
-        if l[:2] != '& ':
-            new_file.append(l)
-        else:
-            try:
-                with open('../test/'+l[2:].replace('\n',''), encoding='utf8') as f:
-                    lines = f.readlines()
-
-                    for ind,l in enumerate(lines):
-                        if l[:18] == "from expy import *":
-                            ind += 1
-                            break
-
-                    code = ''.join(lines[ind:])
-
-                new_file.append('\n```python\n%s\n```\n' %(code))
-            except:
-                    print('cannnot read',file)
+#                 new_file.append('\n```python\n%s\n```\n' %(code))
+#             except:
+#                     print('cannnot read',file)
 
 
-    with open(path+'docs/cookbook.md','w+', encoding='utf8') as f:
-        f.writelines(new_file)
+#     with open(path+'docs/quickstart.md','w+', encoding='utf8') as f:
+#         f.writelines(new_file)
+
+# 'cookbook_generator'
+# with open(path+'docs/cookbook_template.txt') as f:
+#     template = f.readlines()
+
+#     new_file = []
+#     for l in template:
+#         if l[:2] != '& ':
+#             new_file.append(l)
+#         else:
+#             try:
+#                 with open('../test/'+l[2:].replace('\n',''), encoding='utf8') as f:
+#                     lines = f.readlines()
+
+#                     for ind,l in enumerate(lines):
+#                         if l[:18] == "from expy import *":
+#                             ind += 1
+#                             break
+
+#                     code = ''.join(lines[ind:])
+
+#                 new_file.append('\n```python\n%s\n```\n' %(code))
+#             except:
+#                     print('cannnot read',file)
+
+
+#     with open(path+'docs/cookbook.md','w+', encoding='utf8') as f:
+#         f.writelines(new_file)
 
 'api_generator'
 with open(path+'docs/api_template.txt') as f:

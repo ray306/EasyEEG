@@ -20,7 +20,7 @@ def ERP(self, compare=False, comparison_params=comparison_params):
 
     default_plot_params = dict(plot_type=['direct', 'waveform'], y_title='Amplitude(uV)', err_style='ci_band',
                                color="Set1", style='darkgrid', compare=compare, win=comparison_params['win'], sig_limit=0.05)
-    return structure.Analyzed_data('ERP', erp_batch, stats_data, default_plot_params)
+    return structure.Analyzed_data('ERP', erp_batch, stats_data, default_plot_params=default_plot_params)
 
 def topo_ERPs(self, compare=False, comparison_params=comparison_params):
     # with the decorator, we can just focuse on case data instead of batch/collection data
@@ -37,7 +37,7 @@ def topo_ERPs(self, compare=False, comparison_params=comparison_params):
 
     default_plot_params = dict(plot_type=['float', 'waveform'], y_title='Amplitude(uV)', err_style='ci_band', color="Set1", style='darkgrid', compare=compare,
         win=comparison_params['win'],sig_limit=0.05,xy_locs=self.info['xy_locs'])
-    return structure.Analyzed_data('topo_ERPs', erp_batch, stats_data, default_plot_params)
+    return structure.Analyzed_data('topo_ERPs', erp_batch, stats_data, default_plot_params=default_plot_params)
 
 def ERPs(self):
     # with the decorator, we can just focuse on case data instead of batch/collection data
@@ -49,7 +49,7 @@ def ERPs(self):
     stats_data = None
 
     default_plot_params = dict(plot_type=['direct','waveform'], y_title='Amplitude(uV)', err_style=None, color=['#34495e'], style='darkgrid',legend=False)
-    return structure.Analyzed_data('ERPs', erp_batch, stats_data, default_plot_params)
+    return structure.Analyzed_data('ERPs', erp_batch, stats_data, default_plot_params=default_plot_params)
 
 def GFP(self, compare=False, comparison_params=comparison_params):
     def calc_gfp(x):
@@ -78,4 +78,4 @@ def GFP(self, compare=False, comparison_params=comparison_params):
 
     default_plot_params = dict(plot_type=['direct', 'waveform'], y_title='GFP', err_style='ci_band',
                                color="Set1", style='darkgrid', compare=compare, win=comparison_params['win'], sig_limit=0.05)
-    return structure.Analyzed_data('GFP', gfp_batch, stats_data, default_plot_params)
+    return structure.Analyzed_data('GFP', gfp_batch, stats_data, default_plot_params=default_plot_params)

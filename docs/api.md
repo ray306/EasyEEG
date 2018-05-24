@@ -31,7 +31,7 @@ extracted.get_info(self, key)
 structure.Extracted_epochs.ERP()
 structure.Extracted_epochs.topo_ERPs()
 structure.Extracted_epochs.ERPs()
-structure.Extracted_epochs.RMS()
+structure.Extracted_epochs.GFP()
 structure.Extracted_epochs.Spectrum()
 structure.Extracted_epochs.Time_frequency()
 structure.Extracted_epochs.topography()
@@ -46,12 +46,12 @@ structure.Extracted_epochs.classification()
 plot(self, plot_params=None, save=False, return_fig=False)
 
 'figure_group'
-float_plot(fig, data, annotation, positions, plot_params)
-matrix_plot(fig, data, annotation, x_axis, y_axis, plot_params)
+float_plot
+matrix_plot
 
 'figure_unit'
-plot_waveform(ax, data, plot_params)
-plot_spectrum(ax, data, plot_params)
-plot_heatmap(ax, data, plot_params)
-plot_topograph(ax, data, plot_params)
+plot_waveform
+plot_spectrum
+plot_heatmap
+plot_topograph
 channel_locs(topo)

@@ -53,7 +53,9 @@ def save_result(result, filepath):
         pickle.dump(result.analysis_name, f)
         pickle.dump(result.data, f)
         pickle.dump(result.annotation, f)
+        pickle.dump(result.supplement, f)
         pickle.dump(result.default_plot_params, f)
+
         if hasattr(result.data, 'name'):
             pickle.dump(result.data.name, f)
         else:

@@ -46,7 +46,7 @@ def Spectrum(self, compare=False, freq_span=(0,30), target='power', comparison_p
 
     default_plot_params = dict(plot_type=['direct', 'spectrum'], y_title='power', err_style='ci_band',
                                color="Set1", style='darkgrid', compare=compare, win=comparison_params['win'], sig_limit=0.05)
-    return structure.Analyzed_data('Spectrum', spetrum_batch, stats_data, default_plot_params)
+    return structure.Analyzed_data('Spectrum', spetrum_batch, stats_data, default_plot_params=default_plot_params)
 
 # grand average
 def Time_frequency(self, compare=False, freq_span=(0, 30)):
@@ -103,4 +103,4 @@ def Time_frequency(self, compare=False, freq_span=(0, 30)):
 
     default_plot_params = dict(plot_type=['direct', 'heatmap'], x_title='time', y_title='frequency', compare=compare, sig_limit=0.05,
         color="RdBu_r", style='white', grid=False, cbar_title='Power')
-    return structure.Analyzed_data('Time Frequency', tf_batch, stats_data, default_plot_params)
+    return structure.Analyzed_data('Time Frequency', tf_batch, stats_data, default_plot_params=default_plot_params)
